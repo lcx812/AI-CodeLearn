@@ -24,14 +24,14 @@ electron/ipc/ai.ts → 根据用户配置动态选择 provider
 
 | ID | 名称 | 类型 | Base URL | 默认 Model |
 |----|------|------|----------|------------|
-| deepseek | DeepSeek | openai-compat | https://api.deepseek.com | deepseek-v4-pro |
-| claude | Claude | anthropic | https://api.anthropic.com | claude-sonnet-4-20250514 |
-| openai | OpenAI | openai-compat | https://api.openai.com/v1 | gpt-4o |
-| qwen | 通义千问 | openai-compat | https://dashscope.aliyuncs.com/compatible-mode/v1 | qwen-plus |
-| glm | 智谱GLM | openai-compat | https://api.z.ai/api/paas/v4 | glm-4-flash |
-| custom | 自定义 | openai-compat | （用户填写） | （用户填写） |
+| `deepseek` | DeepSeek | openai-compat | `https://api.deepseek.com` | `deepseek-v4-pro` |
+| `claude` | Claude | anthropic | `https://api.anthropic.com` | `claude-sonnet-4-20250514` |
+| `openai` | OpenAI | openai-compat | `https://api.openai.com/v1` | `gpt-4o` |
+| `qwen` | 通义千问 | openai-compat | `https://dashscope.aliyuncs.com/compatible-mode/v1` | `qwen-plus` |
+| `glm` | 智谱GLM | openai-compat | `https://api.z.ai/api/paas/v4` | `glm-4-flash` |
+| `custom` | 自定义 | openai-compat | （用户填写） | （用户填写） |
 
-- 所有 openai-compat 类型统一使用 openai npm 包调用
+- 所有 openai-compat 类型统一使用 `openai` npm 包调用
 - Claude 保留 Anthropic SDK 调用
 - 用户可修改任意预设的 URL 和 model name
 
@@ -39,13 +39,13 @@ electron/ipc/ai.ts → 根据用户配置动态选择 provider
 
 ```typescript
 interface AISettings {
-  globalProvider: string
+  globalProvider: string          // 默认 'deepseek'
   providers: Record<string, {
     apiKey: string
-    baseURL: string
-    model: string
+    baseURL: string               // 可覆盖预设
+    model: string                 // 可覆盖预设
   }>
-  functionOverrides: {
+  functionOverrides: {            // 按功能覆盖 provider
     chat?: string
     review?: string
     courseGen?: string
@@ -67,10 +67,10 @@ interface AISettings {
 
 ### 关键文件
 
-- electron/llm.ts — 重写为 provider 工厂 + 预设定义
-- electron/ipc/ai.ts — 动态选择 provider 调用
-- src/stores/settings.ts — 新增 aiSettings 状态
-- src/pages/Settings.tsx — 新增多平台配置 UI
+- `electron/llm.ts` — 重写为 provider 工厂 + 预设定义
+- `electron/ipc/ai.ts` — 动态选择 provider 调用
+- `src/stores/settings.ts` — 新增 aiSettings 状态
+- `src/pages/Settings.tsx` — 新增多平台配置 UI
 
 ---
 
@@ -82,7 +82,7 @@ interface AISettings {
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  💻 练习场                     [上传文件] [提交审查] │
+│  💻 练习场                     [上传文件📎] [提交审查] │
 ├─────────────────────┬────────────────────────────────┤
 │  题目描述 + 要求     │                               │
 │  （可折叠）          │    Monaco 编辑器               │
@@ -96,9 +96,9 @@ interface AISettings {
 ### 文件上传
 
 - 按钮触发系统文件对话框
-- 支持格式: .py .js .ts .go .rs .java .c .cpp .rb .swift .kt
+- 支持格式: `.py .js .ts .go .rs .java .c .cpp .rb .swift .kt`
 - 文件内容读入 Monaco 编辑器
-- 通过 Electron dialog.showOpenDialog + fs.readFile
+- 通过 Electron `dialog.showOpenDialog` + `fs.readFile`
 
 ### 审查 Prompt 重构
 
@@ -126,9 +126,9 @@ interface AISettings {
 
 ### 关键文件
 
-- src/pages/Playground.tsx — 重写布局，加入文件上传、追问
-- electron/ipc/ai.ts — review-code handler 使用新 prompt
-- electron/ipc/fs.ts — 新增文件读取 IPC handler
+- `src/pages/Playground.tsx` — 重写布局，加入文件上传、追问
+- `electron/ipc/ai.ts` — review-code handler 使用新 prompt
+- `electron/ipc/fs.ts` — 新增文件读取 IPC handler（读文件内容）
 
 ---
 
@@ -163,6 +163,8 @@ interface Chapter {
   exercises: Exercise[]     // 配套练习题
   status: 'pending' | 'generating' | 'done'
 }
+
+// Exercise 已有，增强 testCases 为含输入输出示例
 ```
 
 ### AI 导师页增强
@@ -204,18 +206,18 @@ AI 导师 system prompt 增强，携带：
 
 ### 课程存储
 
-- 课程数据存 SQLite courses 表（已有）
-- 章节内容存 chapters 表（新增）（或 JSON 字段）
-- 对话历史存 chat_history 表
+- 课程数据存 SQLite `courses` 表（已有）
+- 章节内容存 `chapters` 表（新增）（或 JSON 字段）
+- 对话历史存 `chat_history` 表
 
 ### 关键文件
 
-- src/components/chat/CourseDrawer.tsx — 新增课程大纲抽屉
-- src/components/chat/ChatPanel.tsx — 集成 CourseDrawer + 增强 system prompt
-- src/stores/chat.ts — 新增 course state
-- src/stores/course.ts — 增强课程/章节管理
-- electron/ipc/ai.ts — chat/courseGen handler 使用增强 prompt
-- electron/db.ts — 如需要，新增 chapters 表
+- `src/components/chat/CourseDrawer.tsx` — 新增课程大纲抽屉
+- `src/components/chat/ChatPanel.tsx` — 集成 CourseDrawer + 增强 system prompt
+- `src/stores/chat.ts` — 新增 course state
+- `src/stores/course.ts` — 增强课程/章节管理
+- `electron/ipc/ai.ts` — chat/courseGen handler 使用增强 prompt
+- `electron/db.ts` — 如需要，新增 chapters 表
 
 ---
 

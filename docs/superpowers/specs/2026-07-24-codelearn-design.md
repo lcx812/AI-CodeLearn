@@ -54,7 +54,7 @@ CodeLearn 是一个本地运行的 AI 驱动编程语言学习桌面应用。AI 
 
 - **Electron Main**: 窗口生命周期、IPC 桥接、AI API 代理（避免前端暴露 Key）、本地数据库操作
 - **Electron Renderer**: 全部 UI、Zustand 状态、Monaco 编辑器、路由导航
-- **AI Provider**: 统一 LLMProvider 接口，本期实现 Claude，预留 OpenAI 扩展
+- **AI Provider**: 统一 `LLMProvider` 接口，本期实现 Claude，预留 OpenAI 扩展
 - **Storage**: better-sqlite3 单文件，存用户进度、对话历史、课程缓存
 
 ## 目录结构
@@ -148,7 +148,7 @@ codelearn/
 
 ```typescript
 interface LLMProvider {
-  chat(messages: Message[], systemPrompt: string): AsyncIterable<string>;
+  chat(messages: Message[], systemPrompt: string): AsyncIterable<string>;  // 流式
   generateLesson(lang: string, topic: string, level: string): Promise<Lesson>;
   reviewCode(code: string, task: string, lang: string): Promise<Review>;
   generateExercise(lang: string, topic: string): Promise<Exercise>;
@@ -172,7 +172,7 @@ interface LLMProvider {
 ### API Key 管理
 
 - 用户在设置页输入 API Key
-- 主进程 safeStorage 加密存储
+- 主进程 `safeStorage` 加密存储
 - 渲染进程通过 IPC 调用主进程代理，不直接接触 Key
 
 ## 本期范围
