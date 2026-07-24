@@ -59,7 +59,6 @@ export default function Courses() {
 
   return (
     <div className="max-w-5xl mx-auto p-6">
-      {/* 标题栏 */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold">课程</h2>
         <button
@@ -74,14 +73,12 @@ export default function Courses() {
         </button>
       </div>
 
-      {/* 课程生成器 */}
       {showGenerator && (
         <div className="mb-6">
           <CourseGenerator onDone={() => setShowGenerator(false)} />
         </div>
       )}
 
-      {/* 语言筛选栏 */}
       {courses.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-6">
           <button
@@ -110,7 +107,6 @@ export default function Courses() {
         </div>
       )}
 
-      {/* 空状态 */}
       {courses.length === 0 && !showGenerator && (
         <div className="bg-surface-light rounded-xl p-12 text-center">
           <div className="text-6xl mb-5">📚</div>
@@ -127,7 +123,6 @@ export default function Courses() {
         </div>
       )}
 
-      {/* 课程卡片列表 */}
       {filtered.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(course => (
@@ -136,7 +131,6 @@ export default function Courses() {
               onClick={() => handleCardClick(course.id)}
               className="bg-surface-light rounded-xl p-5 hover:bg-surface-light/80 transition-colors cursor-pointer border border-gray-700 hover:border-accent/50 group"
             >
-              {/* 头部 */}
               <div className="flex items-start justify-between mb-3">
                 <span className="text-2xl">{getIcon(course.language)}</span>
                 <button
@@ -150,10 +144,8 @@ export default function Courses() {
                 </button>
               </div>
 
-              {/* 标题 */}
               <h3 className="font-semibold text-sm mb-3 truncate text-left w-full">{course.title}</h3>
 
-              {/* 元信息 */}
               <div className="flex items-center gap-2 flex-wrap">
                 {diffBadge(course.difficulty)}
                 <span className="text-xs text-gray-500">{course.chapters.length} 章</span>
@@ -170,7 +162,6 @@ export default function Courses() {
         </div>
       )}
 
-      {/* 删除确认对话框 */}
       {deleteId && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-surface-light rounded-xl p-6 border border-gray-700 w-80 shadow-xl">

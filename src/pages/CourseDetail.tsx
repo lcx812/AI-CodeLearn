@@ -28,22 +28,34 @@ function formatTime(ts: number): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function QuizCard({ q, qi, answered, chosen, onChoose }: {
+/* ================================================================
+   QuizCard
+   ================================================================ */
+function QuizCard({
+  q, qi, answered, chosen, onChoose
+}: {
   q: ChoiceQuestion; qi: number; answered: boolean; chosen: number | undefined; onChoose: (oi: number) => void
 }) {
   const correct = chosen === q.correctIndex
   return (
     <div className="bg-surface-dark rounded-lg p-4">
-      <p className="text-sm font-semibold text-gray-200 mb-3">{qi + 1}. {q.question}</p>
+      <p className="text-sm font-semibold text-gray-200 mb-3">
+        {qi + 1}. {q.question}
+      </p>
       <div className="space-y-1.5">
         {q.options.map((opt, oi) => {
           const picked = chosen === oi
           const isCorrect = oi === q.correctIndex
           let cls = 'w-full text-left px-3 py-2 rounded text-sm transition-colors '
-          if (!answered) { cls += 'hover:bg-surface text-gray-400' }
-          else if (isCorrect) { cls += 'bg-accent-green/20 text-accent-green' }
-          else if (picked && !isCorrect) { cls += 'bg-accent-red/20 text-accent-red' }
-          else { cls += 'text-gray-500' }
+          if (!answered) {
+            cls += 'hover:bg-surface text-gray-400'
+          } else if (isCorrect) {
+            cls += 'bg-accent-green/20 text-accent-green'
+          } else if (picked && !isCorrect) {
+            cls += 'bg-accent-red/20 text-accent-red'
+          } else {
+            cls += 'text-gray-500'
+          }
           return (
             <button key={oi} onClick={() => onChoose(oi)} disabled={answered} className={cls}>
               <span className="mr-2 font-mono text-xs">{'ABCD'[oi]}.</span>
@@ -64,6 +76,9 @@ function QuizCard({ q, qi, answered, chosen, onChoose }: {
   )
 }
 
+/* ================================================================
+   ExerciseCard
+   ================================================================ */
 function ExerciseCard({ ex, onOpen }: { ex: Exercise; onOpen: () => void }) {
   return (
     <div className="bg-surface-dark rounded-lg p-4">
@@ -80,7 +95,7 @@ function ExerciseCard({ ex, onOpen }: { ex: Exercise; onOpen: () => void }) {
       <p className="text-xs text-gray-400 mb-3">{ex.description}</p>
       {ex.testCases && ex.testCases.length > 0 && (
         <div className="mb-3">
-          <p className="text-2xs text-gray-500 mb-1.5 uppercase tracking-wide">测试用例</p>
+          <p className="text-2xs text-gray-500 mb-1.5 uppercase tracking-wide">Test Cases</p>
           {ex.testCases.slice(0, 3).map((tc, tci) => (
             <div key={tci} className="bg-surface rounded p-2 text-xs font-mono mb-1">
               <div className="text-green-400">&gt; {tc.input}</div>
@@ -97,6 +112,9 @@ function ExerciseCard({ ex, onOpen }: { ex: Exercise; onOpen: () => void }) {
   )
 }
 
+/* ================================================================
+   Main
+   ================================================================ */
 export default function CourseDetail() {
   const { id } = useParams<{ id: string }>()
   const nav = useNavigate()
@@ -106,16 +124,21 @@ export default function CourseDetail() {
 
   const [chId, setChId] = useState<string | null>(null)
   const [tab, setTab] = useState<'content' | 'chat'>('content')
+
   const [expanding, setExpanding] = useState(false)
   const [showExpander, setShowExpander] = useState(false)
   const [expandText, setExpandText] = useState('')
+
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [revealed, setRevealed] = useState<Record<number, boolean>>({})
 
   const cleanup = useRef<(() => void) | null>(null)
   const firstRender = useRef(true)
 
-  const ch = useMemo(() => course?.chapters.find(c => c.id === chId) || null, [course, chId])
+  const ch = useMemo(
+    () => course?.chapters.find(c => c.id === chId) || null,
+    [course, chId]
+  )
 
   useEffect(() => {
     if (firstRender.current && course && course.chapters.length > 0 && !chId) {
@@ -124,7 +147,11 @@ export default function CourseDetail() {
     }
   }, [course, chId])
 
-  useEffect(() => { setAnswers({}); setRevealed({}) }, [chId])
+  useEffect(() => {
+    setAnswers({})
+    setRevealed({})
+  }, [chId])
+
   useEffect(() => () => { cleanup.current?.() }, [])
 
   if (!course) {
@@ -133,7 +160,9 @@ export default function CourseDetail() {
         <div className="text-5xl">📚</div>
         <p>课程未找到</p>
         <button onClick={() => nav('/courses')}
-          className="px-4 py-2 bg-accent text-surface-dark rounded-lg text-sm">返回课程列表</button>
+          className="px-4 py-2 bg-accent text-surface-dark rounded-lg text-sm">
+          返回课程列表
+        </button>
       </div>
     )
   }
@@ -149,7 +178,7 @@ export default function CourseDetail() {
 
     const titles = course!.chapters.map(c => c.title).join('、')
     const prompt = `你是课程设计专家。为以下课程扩写 3-5 个新章节（按学习顺序排列）。
-
+    
 课程：${course!.title}（${course!.language}，${DIFF[course!.difficulty]}）
 已有章节：${titles || '暂无'}
 
@@ -180,7 +209,7 @@ export default function CourseDetail() {
               }))
               addChapters(course!.id, chs)
             }
-          } catch {}
+          } catch { /* ignore parse error */ }
         }
         setExpanding(false)
         setExpandText('')
@@ -198,13 +227,16 @@ export default function CourseDetail() {
 
   function openPlayground(ex: Exercise) {
     localStorage.setItem('playground_exercise', JSON.stringify({
-      courseId: course!.id, chapterId: ch?.id || null, exercise: ex,
+      courseId: course!.id,
+      chapterId: ch?.id || null,
+      exercise: ex,
     }))
     nav('/playground')
   }
 
   return (
     <div className="h-full flex flex-col gap-3">
+      {/* Top bar */}
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <button onClick={() => nav('/courses')}
@@ -229,14 +261,20 @@ export default function CourseDetail() {
         </div>
       </div>
 
+      {/* Expander */}
       {showExpander && (
         <div className="mb-4 shrink-0">
-          <ChapterExpander courseId={course.id} currentChapterCount={course.chapters.length}
-            onDone={() => setShowExpander(false)} />
+          <ChapterExpander
+            courseId={course.id}
+            currentChapterCount={course.chapters.length}
+            onDone={() => setShowExpander(false)}
+          />
         </div>
       )}
 
+      {/* Main: left outline + right content */}
       <div className="flex-1 flex gap-4 min-h-0">
+        {/* Left: outline */}
         <aside className="w-56 bg-surface-light rounded-xl flex flex-col shrink-0 overflow-hidden">
           <button onClick={() => setChId(null)}
             className="w-full text-left p-3 border-b border-gray-700 text-sm font-semibold truncate shrink-0 hover:bg-surface-dark transition-colors">
@@ -244,13 +282,18 @@ export default function CourseDetail() {
           </button>
           <nav className="flex-1 overflow-auto p-2">
             {course.chapters.length === 0 ? (
-              <p className="p-3 text-xs text-gray-500 text-center">暂无章节，点击上方"扩写"生成</p>
+              <p className="p-3 text-xs text-gray-500 text-center">
+                暂无章节，点击上方“扩写”生成
+              </p>
             ) : (
               course.chapters.map(c => (
                 <button key={c.id}
                   onClick={() => { setChId(c.id); setTab('content') }}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-colors mb-0.5 ${
-                    chId === c.id ? 'bg-accent/20 text-white' : 'hover:bg-surface-dark text-gray-400'}`}>
+                    chId === c.id
+                      ? 'bg-accent/20 text-white'
+                      : 'hover:bg-surface-dark text-gray-400'
+                  }`}>
                   <span className="text-xs shrink-0">{ST_ICON[c.status] || '⬜'}</span>
                   <span className="truncate">{c.title}</span>
                 </button>
@@ -259,71 +302,104 @@ export default function CourseDetail() {
           </nav>
         </aside>
 
+        {/* Right: content + tabs */}
         <main className="flex-1 bg-surface-light rounded-xl flex flex-col overflow-hidden min-w-0">
+          {/* Tabs */}
           <div className="flex border-b border-gray-700 shrink-0">
             {(['content', 'chat'] as const).map(t => (
               <button key={t} onClick={() => setTab(t)}
                 className={`px-5 py-2.5 text-sm font-medium transition-colors border-b-2 ${
-                  tab === t ? 'text-accent border-accent' : 'text-gray-500 border-transparent hover:text-gray-300'}`}>
+                  tab === t
+                    ? 'text-accent border-accent'
+                    : 'text-gray-500 border-transparent hover:text-gray-300'
+                }`}>
                 {t === 'content' ? '📖 章节内容' : '💬 AI提问'}
               </button>
             ))}
           </div>
 
+          {/* Content area */}
           <div className="flex-1 overflow-auto min-h-0">
             {tab === 'content' ? (
               <div className="p-6">
                 {!ch ? (
                   <div>
                     <h2 className="text-xl font-bold mb-4">{course.title}</h2>
+
                     <div className="grid grid-cols-2 gap-3 mb-5">
                       <div className="bg-surface-dark rounded-lg p-3">
-                        <p className="text-2xs text-gray-500 uppercase tracking-wider mb-0.5">语言</p>
+                        <p className="text-2xs text-gray-500 uppercase tracking-wider mb-0.5">Language</p>
                         <p className="text-sm font-semibold">{course.language}</p>
                       </div>
                       <div className="bg-surface-dark rounded-lg p-3">
-                        <p className="text-2xs text-gray-500 uppercase tracking-wider mb-0.5">难度</p>
+                        <p className="text-2xs text-gray-500 uppercase tracking-wider mb-0.5">Difficulty</p>
                         <p className="text-sm font-semibold">{DIFF[course.difficulty]}</p>
                       </div>
                       <div className="bg-surface-dark rounded-lg p-3">
-                        <p className="text-2xs text-gray-500 uppercase tracking-wider mb-0.5">章节数</p>
-                        <p className="text-sm font-semibold">{course.chapters.length} 章</p>
+                        <p className="text-2xs text-gray-500 uppercase tracking-wider mb-0.5">Chapters</p>
+                        <p className="text-sm font-semibold">{course.chapters.length} chapters</p>
                       </div>
                       <div className="bg-surface-dark rounded-lg p-3">
-                        <p className="text-2xs text-gray-500 uppercase tracking-wider mb-0.5">创建时间</p>
+                        <p className="text-2xs text-gray-500 uppercase tracking-wider mb-0.5">Created</p>
                         <p className="text-sm font-semibold">{formatTime(course.createdAt)}</p>
                       </div>
                     </div>
+
                     {course.description && (
                       <div className="bg-surface-dark rounded-lg p-4 mb-4">
-                        <p className="text-2xs text-gray-500 uppercase tracking-wider mb-1.5">课程描述</p>
+                        <p className="text-2xs text-gray-500 uppercase tracking-wider mb-1.5">Description</p>
                         <div className="prose prose-invert prose-sm max-w-none">
-                          <ReactMarkdown components={{
-                            code({ className, children, ...props }: any) {
-                              const match = /language-(\w+)/.exec(className || '')
-                              const s = String(children).replace(/\n$/, '')
-                              if (match) return <SyntaxHighlighter style={oneDark} language={match[1]} PreTag="div" customStyle={{ borderRadius: '0.5rem', fontSize: '0.8rem' }}>{s}</SyntaxHighlighter>
-                              return <code className="bg-surface px-1.5 py-0.5 rounded text-accent text-xs" {...props}>{children}</code>
-                            }
-                          }}>{course.description}</ReactMarkdown>
+                          <ReactMarkdown
+                            components={{
+                              code({ className, children, ...props }: any) {
+                                const match = /language-(\w+)/.exec(className || '')
+                                const s = String(children).replace(/\n$/, '')
+                                if (match) {
+                                  return (
+                                    <SyntaxHighlighter style={oneDark} language={match[1]} PreTag="div"
+                                      customStyle={{ borderRadius: '0.5rem', fontSize: '0.8rem' }}>
+                                      {s}
+                                    </SyntaxHighlighter>
+                                  )
+                                }
+                                return <code className="bg-surface px-1.5 py-0.5 rounded text-accent text-xs" {...props}>{children}</code>
+                              }
+                            }}
+                          >
+                            {course.description}
+                          </ReactMarkdown>
                         </div>
                       </div>
                     )}
+
                     <p className="text-gray-500 text-sm">← 点击左侧章节开始学习</p>
                   </div>
                 ) : (
+                  /* Chapter content */
                   <div>
                     <h2 className="text-xl font-bold mb-6">{ch.title}</h2>
+
                     {ch.content ? (
                       <div className="prose prose-invert prose-sm max-w-none mb-8">
-                        <ReactMarkdown components={{
-                          code({ className, children, ...props }: any) {
-                            const match = /language-(\w+)/.exec(className || '')
-                            const s = String(children).replace(/\n$/, '')
-                            if (match) return <SyntaxHighlighter style={oneDark} language={match[1]} PreTag="div" customStyle={{ borderRadius: '0.5rem', fontSize: '0.8rem' }}>{s}</SyntaxHighlighter>
-                            return <code className="bg-surface px-1.5 py-0.5 rounded text-accent text-xs" {...props}>{children}</code>
-                          }
-                        }}>{ch.content}</ReactMarkdown>
+                        <ReactMarkdown
+                          components={{
+                            code({ className, children, ...props }: any) {
+                              const match = /language-(\w+)/.exec(className || '')
+                              const s = String(children).replace(/\n$/, '')
+                              if (match) {
+                                return (
+                                  <SyntaxHighlighter style={oneDark} language={match[1]} PreTag="div"
+                                    customStyle={{ borderRadius: '0.5rem', fontSize: '0.8rem' }}>
+                                    {s}
+                                  </SyntaxHighlighter>
+                                )
+                              }
+                              return <code className="bg-surface px-1.5 py-0.5 rounded text-accent text-xs" {...props}>{children}</code>
+                            }
+                          }}
+                        >
+                          {ch.content}
+                        </ReactMarkdown>
                       </div>
                     ) : (
                       <div className="text-center text-gray-500 py-16 mb-8">
@@ -332,8 +408,11 @@ export default function CourseDetail() {
                         <p className="text-xs mt-1 text-gray-600">切换到「AI提问」让 AI 生成内容</p>
                       </div>
                     )}
+
+                    {/* Chapter exercises */}
                     <div className="border-t border-gray-700 pt-6 mt-4">
                       <h3 className="text-lg font-bold mb-5">📝 章末题目</h3>
+
                       {ch.quiz.length === 0 && ch.exercises.length === 0 ? (
                         <div className="text-center text-gray-500 py-8">
                           <p className="text-sm">暂无题目</p>
@@ -342,10 +421,14 @@ export default function CourseDetail() {
                       ) : (
                         <div className="space-y-5">
                           {ch.quiz.map((q, qi) => (
-                            <QuizCard key={qi} q={q} qi={qi} answered={!!revealed[qi]} chosen={answers[qi]} onChoose={(oi) => answerQuiz(qi, oi)} />
+                            <QuizCard key={qi} q={q} qi={qi}
+                              answered={!!revealed[qi]} chosen={answers[qi]}
+                              onChoose={(oi) => answerQuiz(qi, oi)} />
                           ))}
+
                           {ch.exercises.map((ex, ei) => (
-                            <ExerciseCard key={ei} ex={ex} onOpen={() => openPlayground(ex)} />
+                            <ExerciseCard key={ei} ex={ex}
+                              onOpen={() => openPlayground(ex)} />
                           ))}
                         </div>
                       )}
@@ -354,6 +437,7 @@ export default function CourseDetail() {
                 )}
               </div>
             ) : (
+              /* AI Chat tab */
               <ChatPanel courseId={course.id} chapter={ch} />
             )}
           </div>
