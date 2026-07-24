@@ -80,7 +80,7 @@ codelearn/
 | 页面 | 路由 | 功能 |
 |------|------|------|
 | 仪表盘 | `/` | 学习概览、课程列表、快速入口 |
-| 课程 | `/courses` | 多课程列表 + AI 生成课程（填写语言/方向/难度/章节数/题目数，流式生成大纲到逐章） |
+| 课程 | `/courses` | 多课程列表 + AI 生成课程（填写语言/方向/难度/章节数/题目数，流式生成大纲→逐章） |
 | 课程详情 | `/courses/:id` | 左栏大纲 + 右栏内容（章节 Markdown + 章末选择题/编程题）+ AI 提问 Tab + 扩写面板 |
 | 练习场 | `/playground` | 课程/章节选择器 + 综合项目/章节练习切换 + Monaco 编辑器 + 代码审查 + 追问 |
 | AI 导师 | `/ai-tutor` | 语言探索模式（用途、历史、开发环境简短回答） |
@@ -118,11 +118,11 @@ Exercise {
 
 ## 约束规则
 
-- 单次课程生成 <= 20 章，单次扩写 <= 20 章
-- 单个课程累计 <= 500 章
+- 单次课程生成 ≤ 20 章，单次扩写 ≤ 20 章
+- 单个课程累计 ≤ 500 章
 - AI 输出严格 JSON-only，禁止问候语和确认语
 - 所有 AI 调用通过主进程代理，API Key 加密存储
-- 扩写 JSON 解析三级兜底：直接解析 -> { } 截取 -> 代码块提取
+- 扩写 JSON 解析三级兜底：直接解析 → { } 截取 → 代码块提取
 
 ## 设计原则
 
@@ -134,7 +134,7 @@ Exercise {
 
 <h2 id="english">English</h2>
 
-> I'm a soon-to-be college freshman, and this is my first attempt at building something that might be considered useful. Everything is AI-generated using Claude Code, primarily powered by the DeepSeek V4 Pro model. This project is just for fun -- if anyone has suggestions, I'd be very grateful.
+> I'm a soon-to-be college freshman, and this is my first attempt at building something that might be considered useful. Everything is AI-generated using Claude Code, primarily powered by the DeepSeek V4 Pro model. This project is just for fun — if anyone has suggestions, I'd be very grateful.
 
 An AI-powered desktop app for learning programming languages. Runs locally, with AI dynamically generating course content (outlines, chapters, quizzes, coding exercises), supporting progressive learning from beginner to advanced.
 
@@ -212,7 +212,7 @@ codelearn/
 | Page | Route | Description |
 |------|-------|-------------|
 | Dashboard | `/` | Learning overview, course list, quick actions |
-| Courses | `/courses` | Multi-course list + AI course generation (language/direction/difficulty/chapters/exercises, streaming outline->per chapter) |
+| Courses | `/courses` | Multi-course list + AI course generation (language/direction/difficulty/chapters/exercises, streaming outline→per chapter) |
 | Course Detail | `/courses/:id` | Left outline + right content (chapter markdown + quizzes/exercises) + AI chat tab + expand panel |
 | Playground | `/playground` | Course/chapter selector + integrated project/chapter exercise toggle + Monaco editor + code review + follow-up |
 | AI Tutor | `/ai-tutor` | Language exploration (usage, history, dev environment quick answers) |
@@ -252,9 +252,9 @@ Exercise {
 
 - Max 20 chapters per generation, max 20 per expansion
 - Max 500 chapters per course
-- AI output strictly JSON-only -- no greetings or confirmations
+- AI output strictly JSON-only — no greetings or confirmations
 - All AI calls proxied through main process, API keys encrypted at rest
-- Expansion JSON parsing with 3-tier fallback: direct parse -> { } extraction -> code block extraction
+- Expansion JSON parsing with 3-tier fallback: direct parse → `{ }` extraction → code block extraction
 
 ## Design Principles
 
