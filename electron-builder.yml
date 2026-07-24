@@ -1,0 +1,13 @@
+appId: com.codelearn.app
+productName: CodeLearn
+directories:
+  output: release
+files:
+  - dist
+  - dist-electron
+win:
+  target: nsis
+mac:
+  target: dmg
+linux:
+  target: AppImage
