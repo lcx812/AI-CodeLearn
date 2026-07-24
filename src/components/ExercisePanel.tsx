@@ -39,12 +39,10 @@ export default function ExercisePanel({ exercise, loading, onGenerate }: Props) 
         </span>
       </div>
 
-      {/* 题目描述 */}
       <div className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed mb-4">
         {exercise.description}
       </div>
 
-      {/* 输入输出示例 */}
       {exercise.testCases.length > 0 && (
         <div className="mb-4">
           <h4 className="text-sm font-semibold mb-2 text-accent">输入输出示例</h4>

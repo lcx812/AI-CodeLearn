@@ -1,7 +1,6 @@
 import MonacoEditor, { loader } from '@monaco-editor/react'
 import * as monaco from 'monaco-editor'
 
-// 配置 loader 使用本地 Monaco，避免 CDN 加载失败
 loader.config({ monaco })
 
 interface EditorProps {

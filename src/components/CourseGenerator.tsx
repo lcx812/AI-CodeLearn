@@ -127,7 +127,6 @@ export default function CourseGenerator({ onDone }: Props) {
     <div className="bg-surface-light rounded-xl p-6 border border-gray-700">
       <h3 className="text-lg font-semibold mb-4">AI 课程生成</h3>
 
-      {/* 表单 */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
           <label className="block text-sm text-gray-400 mb-1">编程语言</label>
@@ -204,7 +203,6 @@ export default function CourseGenerator({ onDone }: Props) {
         />
       </div>
 
-      {/* 按钮 */}
       <div className="flex gap-3 mb-4">
         <button
           onClick={handleGenerate}
@@ -223,17 +221,14 @@ export default function CourseGenerator({ onDone }: Props) {
         )}
       </div>
 
-      {/* 错误提示 */}
       {error && (
         <div className="bg-accent-red/10 border border-accent-red/30 rounded-lg p-3 mb-4">
           <p className="text-sm text-accent-red">{error}</p>
         </div>
       )}
 
-      {/* 进度展示 */}
       {(generating || outline || chapterTitles.length > 0 || status) && (
         <div className="border-t border-gray-700 pt-4">
-          {/* 状态文字 */}
           {status && (
             <div className="flex items-center gap-2 mb-3">
               {generating && (
@@ -248,7 +243,6 @@ export default function CourseGenerator({ onDone }: Props) {
             </div>
           )}
 
-          {/* 进度条 */}
           {generating && totalChapters > 0 && (
             <div className="mb-3">
               <div className="h-1.5 bg-surface rounded-full overflow-hidden">
@@ -260,7 +254,6 @@ export default function CourseGenerator({ onDone }: Props) {
             </div>
           )}
 
-          {/* 大纲 */}
           {outline && (
             <div className="mb-3">
               <p className="text-xs text-gray-500 mb-1 uppercase tracking-wide">课程大纲</p>
@@ -270,7 +263,6 @@ export default function CourseGenerator({ onDone }: Props) {
             </div>
           )}
 
-          {/* 已生成章节列表 */}
           {chapterTitles.length > 0 && (
             <div>
               <p className="text-xs text-gray-500 mb-1 uppercase tracking-wide">
