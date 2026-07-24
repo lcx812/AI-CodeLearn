@@ -89,10 +89,14 @@ export default function ChatPanel({ isExplorer = false, courseId, chapter }: Cha
   const cleanupRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
-    if (!isExplorer && !courseId) loadHistory()
+    if (!isExplorer && !courseId) {
+      loadHistory()
+    }
   }, [loadHistory, isExplorer, courseId])
 
-  useEffect(() => () => cleanupRef.current?.(), [])
+  useEffect(() => {
+    return () => cleanupRef.current?.()
+  }, [])
 
   const handleSend = (content: string) => {
     if (isExplorer || courseId) {
@@ -116,7 +120,10 @@ export default function ChatPanel({ isExplorer = false, courseId, chapter }: Cha
     cleanupRef.current = chatStream(
       rawMsgs,
       buildSystemPrompt(lang, course, chapter || null, isExplorer),
-      chunk => { streamAccum.current += chunk; setLocalStream(streamAccum.current) },
+      chunk => {
+        streamAccum.current += chunk
+        setLocalStream(streamAccum.current)
+      },
       () => {
         const final = [...msgs, { role: 'assistant', content: streamAccum.current }]
         setLocalMsgs(final)
@@ -170,22 +177,29 @@ export default function ChatPanel({ isExplorer = false, courseId, chapter }: Cha
         <h2 className="text-2xl font-bold">
           {isExplorer ? '🌐 语言探索' : courseId ? '💬 AI 提问' : '🤖 AI 导师'}
         </h2>
-        <button onClick={handleClear}
-          className="px-3 py-1 text-xs rounded-lg bg-surface-light text-gray-400 hover:text-white transition-colors">
+        <button
+          onClick={handleClear}
+          className="px-3 py-1 text-xs rounded-lg bg-surface-light text-gray-400 hover:text-white transition-colors"
+        >
           清空对话
         </button>
       </div>
       <div className="flex-1 bg-surface-dark rounded-xl overflow-hidden flex flex-col min-h-0">
         <MessageList
           messages={displayMsgs.map((m, i) => ({
-            id: String(i), role: m.role as any, content: m.content, timestamp: 0
+            id: String(i),
+            role: m.role as any,
+            content: m.content,
+            timestamp: 0
           }))}
           isStreaming={displayStreaming}
           currentStream={displayStream}
           onDelete={(id) => {
             if (isExplorer || courseId) {
               setLocalMsgs(prev => prev.filter((_, i) => String(i) !== id))
-            } else { deleteMessage(id) }
+            } else {
+              deleteMessage(id)
+            }
           }}
         />
         <ChatInput onSend={handleSend} disabled={displayStreaming} />
