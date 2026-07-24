@@ -65,7 +65,6 @@ export default function Settings() {
       <div className="bg-surface-light rounded-xl p-6 mb-4">
         <h3 className="font-semibold mb-4">AI API 配置</h3>
 
-        {/* 全局 Provider */}
         <div className="mb-5">
           <label className="block text-sm text-gray-400 mb-1">全局默认 Provider</label>
           <select
@@ -79,7 +78,6 @@ export default function Settings() {
           </select>
         </div>
 
-        {/* Provider Tabs */}
         <div className="flex flex-wrap gap-1 mb-4">
           {PROVIDERS.map(p => (
             <button
@@ -96,7 +94,6 @@ export default function Settings() {
           ))}
         </div>
 
-        {/* Provider Config */}
         <div className="space-y-4 mb-5">
           <div>
             <label className="block text-sm text-gray-400 mb-1">API Key</label>
@@ -130,7 +127,6 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Function Overrides */}
         <div className="border-t border-gray-700 pt-4 mb-5">
           <h4 className="text-sm font-medium text-gray-300 mb-3">功能覆盖（可选）</h4>
           <div className="space-y-3">
@@ -152,7 +148,6 @@ export default function Settings() {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-3">
           <button
             onClick={handleSave}
