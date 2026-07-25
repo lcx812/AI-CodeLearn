@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useCourseStore } from '../stores/course'
+import { getDifficultyLabel } from '../lib/utils'
 
 export default function Dashboard() {
   const courses = useCourseStore(s => s.courses)
@@ -46,7 +47,7 @@ export default function Dashboard() {
                 <div>
                   <div className="font-medium">{c.title}</div>
                   <div className="text-sm text-gray-400">{c.language} · {c.chapters.length} 章 · {
-                    c.difficulty === 'beginner' ? '入门' : c.difficulty === 'intermediate' ? '中级' : '高级'
+                    getDifficultyLabel(c.difficulty)
                   }</div>
                 </div>
                 <span className="text-accent text-sm">进入 →</span>

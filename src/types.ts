@@ -54,7 +54,6 @@ export interface Course {
   id: string
   language: string
   title: string
-  description: string
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   chapters: Chapter[]
   createdAt: number

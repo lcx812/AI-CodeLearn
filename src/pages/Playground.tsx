@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useSettingsStore } from '../stores/settings'
 import { useCourseStore } from '../stores/course'
+import { DIFFICULTY_LABEL } from '../lib/constants'
+import { getDifficultyLabel } from '../lib/utils'
 import Editor from '../components/Editor'
 import ExercisePanel from '../components/ExercisePanel'
 import { generatePlaygroundExercise, reviewCode, openFile, chatStream } from '../lib/ipc'
@@ -80,7 +82,6 @@ export default function Playground() {
     if (!selectedCourse) return ''
     const parts = [
       `课程：${selectedCourse.title}（${selectedCourse.language}，${selectedCourse.difficulty}）`,
-      `描述：${selectedCourse.description}`,
     ]
 
     if (selectedChapterId && chapters.length > 0) {
@@ -227,10 +228,6 @@ export default function Playground() {
   const scoreColor = (s: number) =>
     s >= 80 ? 'text-accent-green' : s >= 60 ? 'text-accent-yellow' : 'text-accent-red'
 
-  const diffLabel: Record<string, string> = {
-    beginner: '入门', intermediate: '中级', advanced: '高级',
-  }
-
   return (
     <div className="h-full flex flex-col">
       <div className="flex-shrink-0 mb-3 space-y-2">
@@ -347,7 +344,7 @@ export default function Playground() {
           <div className="flex items-center gap-2 text-xs text-gray-600">
             <span>语言：{selectedLang}</span>
             <span>|</span>
-            <span>难度：{diffLabel[selectedCourse.difficulty] || selectedCourse.difficulty}</span>
+            <span>难度：{getDifficultyLabel(selectedCourse.difficulty)}</span>
             <span>|</span>
             <span>范围：{selectedChapterId ? chapters.find(c => c.id === selectedChapterId)?.title || '未知章节' : '整个课程'}</span>
           </div>

@@ -2,36 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCourseStore } from '../stores/course'
 import CourseGenerator from '../components/CourseGenerator'
-
-const langIcons: Record<string, string> = {
-  python: '🐍',
-  javascript: '💛',
-  typescript: '💙',
-  rust: '🦀',
-  go: '🔵',
-  java: '☕',
-  c: '⚙️',
-  cpp: '🔧'
-}
-
-function getIcon(lang: string) {
-  return langIcons[lang.toLowerCase()] || '📄'
-}
-
-function fmtDate(ts: number) {
-  const d = new Date(ts)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function diffBadge(d: string) {
-  const map: Record<string, { label: string; cls: string }> = {
-    beginner: { label: '入门', cls: 'bg-accent-green/20 text-accent-green' },
-    intermediate: { label: '中级', cls: 'bg-accent-yellow/20 text-accent-yellow' },
-    advanced: { label: '高级', cls: 'bg-accent-red/20 text-accent-red' }
-  }
-  const m = map[d] || { label: d, cls: 'bg-gray-500/20 text-gray-400' }
-  return <span className={`text-xs px-2 py-0.5 rounded-full ${m.cls}`}>{m.label}</span>
-}
+import { formatDate, getLanguageIcon } from '../lib/utils'
+import DifficultyBadge from '../components/ui/DifficultyBadge'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 export default function Courses() {
   const { courses, languages, deleteCourse, setCurrentCourse } = useCourseStore()
@@ -101,7 +74,7 @@ export default function Courses() {
                   : 'bg-surface-light text-gray-400 hover:text-white'
               }`}
             >
-              {getIcon(lang)} {lang}
+              {getLanguageIcon(lang)} {lang}
             </button>
           ))}
         </div>
@@ -132,7 +105,7 @@ export default function Courses() {
               className="bg-surface-light rounded-xl p-5 hover:bg-surface-light/80 transition-colors cursor-pointer border border-gray-700 hover:border-accent/50 group"
             >
               <div className="flex items-start justify-between mb-3">
-                <span className="text-2xl">{getIcon(course.language)}</span>
+                <span className="text-2xl">{getLanguageIcon(course.language)}</span>
                 <button
                   onClick={e => {
                     e.stopPropagation()
@@ -147,9 +120,9 @@ export default function Courses() {
               <h3 className="font-semibold text-sm mb-3 truncate text-left w-full">{course.title}</h3>
 
               <div className="flex items-center gap-2 flex-wrap">
-                {diffBadge(course.difficulty)}
+                <DifficultyBadge difficulty={course.difficulty} />
                 <span className="text-xs text-gray-500">{course.chapters.length} 章</span>
-                <span className="text-xs text-gray-500 ml-auto">{fmtDate(course.createdAt)}</span>
+                <span className="text-xs text-gray-500 ml-auto">{formatDate(course.createdAt)}</span>
               </div>
             </div>
           ))}
@@ -162,28 +135,13 @@ export default function Courses() {
         </div>
       )}
 
-      {deleteId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-surface-light rounded-xl p-6 border border-gray-700 w-80 shadow-xl">
-            <h4 className="font-semibold mb-2">确认删除</h4>
-            <p className="text-sm text-gray-400 mb-4">删除后无法恢复，确定要删除这个课程吗？</p>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setDeleteId(null)}
-                className="px-4 py-2 bg-surface border border-gray-600 text-gray-300 rounded-lg text-sm hover:bg-surface-dark transition-colors"
-              >
-                取消
-              </button>
-              <button
-                onClick={handleDelete}
-                className="px-4 py-2 bg-accent-red/20 text-accent-red border border-accent-red/30 rounded-lg text-sm hover:bg-accent-red/30 transition-colors"
-              >
-                删除
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        open={!!deleteId}
+        title="确认删除"
+        message="删除后无法恢复，确定要删除这个课程吗？"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   )
 }

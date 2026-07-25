@@ -133,15 +133,20 @@ export function registerAiHandlers() {
           chPrompt
         )
         const parsed = parseJsonResponse(chText)
+        if (parsed && typeof parsed === 'object' && 'error' in parsed) {
+          win.webContents.send('ai:stream-error', `第 ${i + 1} 章 JSON 解析失败: ${(parsed as any).raw || 'unknown'}`)
+          return
+        }
+        const normalized = normalizeChapter(parsed, i + 1)
         win.webContents.send('ai:course-chapter', {
           index: i,
           total: chCount,
-          chapterJson: JSON.stringify(parsed)
+          chapterJson: JSON.stringify(normalized)
         })
       }
 
       // Step 3: 组装最终课程 JSON
-      const courseJson = buildFinalCourseJson(params, outlineText)
+      const courseJson = buildFinalCourseJson(params)
       win.webContents.send('ai:course-done', courseJson)
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error'
@@ -234,62 +239,122 @@ function parseJsonResponse(text: string): unknown {
   return { error: 'JSON parse failed', raw: text.slice(0, 200) }
 }
 
+function normalizeChapter(raw: any, chIndex: number): object {
+  // 0. 空值守卫
+  if (raw == null || typeof raw !== 'object') {
+    return { title: `第${chIndex}章：`, content: '', exercises: [], quiz: [] }
+  }
+
+  // 1. 白名单过滤顶层字段
+  const title = typeof raw.title === 'string' ? raw.title : ''
+  const content = typeof raw.content === 'string' ? raw.content : ''
+  const exercises = Array.isArray(raw.exercises) ? raw.exercises : []
+  const quiz = Array.isArray(raw.quiz) ? raw.quiz : []
+
+  // 2. 标题修正：去除各种破折号变体
+  let cleanTitle = title
+    .replace(/[—─]{1,}/g, '')
+    .replace(/-{2,}/g, '')
+    .trim()
+
+  // 3. 标题格式修正：确保以"第x章："开头
+  const chapterPrefix = /^第\d+章[:：]\s*/
+  if (!chapterPrefix.test(cleanTitle)) {
+    cleanTitle = `第${chIndex}章：${cleanTitle}`
+  } else {
+    cleanTitle = cleanTitle.replace(chapterPrefix, `第${chIndex}章：`)
+  }
+
+  // 4. exercise 规范化
+  const EX_FIELDS = ['type', 'title', 'description', 'starterCode', 'testCases', 'language', 'difficulty']
+  const cleanExercises = exercises.map((ex: any) => {
+    const clean: Record<string, unknown> = {}
+    for (const key of EX_FIELDS) {
+      if (key === 'type') clean.type = ex.type || 'coding'
+      else if (key === 'testCases') clean.testCases = Array.isArray(ex.testCases) ? ex.testCases : []
+      else clean[key] = ex[key] ?? ''
+    }
+    return clean
+  })
+
+  // 5. quiz 规范化
+  const QZ_FIELDS = ['question', 'options', 'correctIndex', 'explanation']
+  const cleanQuiz = quiz.map((q: any) => {
+    const clean: Record<string, unknown> = {}
+    for (const key of QZ_FIELDS) {
+      if (key === 'options') {
+        const opts = Array.isArray(q.options) ? q.options.slice(0, 4) : []
+        while (opts.length < 4) opts.push(`选项${String.fromCharCode(65 + opts.length)}`)
+        clean.options = opts
+      } else if (key === 'correctIndex') {
+        const n = Number(q.correctIndex)
+        clean.correctIndex = Number.isFinite(n) ? Math.max(0, Math.min(3, Math.round(n))) : 0
+      } else {
+        clean[key] = q[key] ?? ''
+      }
+    }
+    return clean
+  })
+
+  return { title: cleanTitle, content, exercises: cleanExercises, quiz: cleanQuiz }
+}
+
 // ─── prompt builders ───
 
 function buildOutlinePrompt(lang: string, direction: string, difficulty: string, chCount: number, qCount: number, extra: string): string {
   const diffLabel = difficulty === 'beginner' ? '入门' : difficulty === 'intermediate' ? '中级' : '高级'
-  return `请为以下课程设计总领性大纲：
+  return `请为以下课程设计章节安排：
 
 【语言】${lang}
 【方向】${direction}
 【难度】${diffLabel}
 【章节数】${chCount}
-【每章题目数】${qCount}（包含选择题 + 至少 1 道编程题）
+【每章题目数】${qCount}（选择题 + 编程题）
 ${extra ? `【额外要求】${extra}` : ''}
 
-请用 Markdown 格式输出课程大纲，包含：
-1. 课程概述（这门课讲什么、适合谁、学完能做什么）
-2. 所有 ${chCount} 章的标题和简要说明（每章 1-2 句话）
-3. 学习路径建议
+【输出格式】严格按以下格式输出 ${chCount} 行，每行一个章节：
+第1章：章节标题 —— 一句话说明
+第2章：章节标题 —— 一句话说明
+...
+第${chCount}章：章节标题 —— 一句话说明
 
-语言平实易懂，专业不生僻。
-【重要规则】
-- 直接输出课程大纲，禁止任何问候语（如"好的"、"这是我为你设计的"）
-- 禁止确认语（如"明白了"、"好的，以下是..."）
-- 直接开始写内容
-用中文回复。`
+【格式规则】
+- 标题格式必须为"第x章：标题"，冒号为中文全角（：）
+- 标题与说明之间用一个" —— "（空格+破折号+空格）分隔
+- 禁止在标题本身中使用"——"、破折号、连字符或副标题
+- 禁止输出课程概述、学习路径建议、问候语、确认语
+- 直接输出第1章，不要任何前缀文字`
 }
 
 function buildChapterPrompt(lang: string, direction: string, difficulty: string, chIndex: number, chTotal: number, qCount: number, outline: string, extra: string): string {
   const diffLabel = difficulty === 'beginner' ? '入门' : difficulty === 'intermediate' ? '中级' : '高级'
+  const quizCount = qCount > 1 ? qCount - 1 : 1
   return `请为以下课程生成第 ${chIndex}/${chTotal} 章的完整内容：
 
 【语言】${lang}
 【方向】${direction}
 【难度】${diffLabel}
-【课程大纲】
+【章节安排】
 ${outline}
 
 ${extra ? `【额外要求】${extra}` : ''}
 
-【重要规则】
-- 只返回 JSON，禁止任何问候语、确认语、解释文字
-- 不要输出"好的"、"这是我为你设计的"等文字
-- 你的整个回复必须以 { 开头、以 } 结尾
+【格式铁律】违反以下任何一条即视为错误输出：
+- 只返回一个 JSON 对象，整个回复以 { 开头、以 } 结尾
+- JSON 顶层只能包含 4 个字段：title、content、exercises、quiz。禁止添加 description 等任何额外字段
+- 禁止输出问候语、确认语、解释文字
 
-请生成本章内容，严格按此 JSON 格式返回（不要额外文本）：
+严格按此 JSON 模板填充：
 {
-  "title": "第${chIndex}章标题（与大纲一致）",
-  "content": "Markdown 格式的完整教学内容，包含概念讲解和代码示例",
+  "title": "第${chIndex}章：章节标题",
+  "content": "Markdown 教学内容（含概念讲解 + 至少2个代码示例）",
   "exercises": [
     {
       "type": "coding",
       "title": "编程题标题",
       "description": "题目描述（含具体要求、输入输出示例）",
-      "starterCode": "初始代码模板（用 ${lang} 语言）",
-      "testCases": [
-        {"input": "示例输入", "expected": "期望输出"}
-      ],
+      "starterCode": "初始代码模板",
+      "testCases": [{"input": "输入", "expected": "期望输出"}],
       "language": "${lang}",
       "difficulty": "${difficulty}"
     }
@@ -299,24 +364,39 @@ ${extra ? `【额外要求】${extra}` : ''}
       "question": "选择题题目",
       "options": ["A. 选项1", "B. 选项2", "C. 选项3", "D. 选项4"],
       "correctIndex": 0,
-      "explanation": "解析说明"
+      "explanation": "解析"
     }
   ]
 }
 
-要求：
-- content 字段用 Markdown，包含概念讲解和至少 2 个代码示例
-- exercises 数组至少包含 1 道编程题（共 ${qCount} 题）
-- quiz 数组包含 ${qCount > 1 ? qCount - 1 : 1} 道选择题
-- 语言平实易懂，专业不生僻
-- 用中文撰写（代码除外）`
+【title 规则】
+- 格式必须为"第${chIndex}章：具体标题"，冒号为中文全角（：）
+- 标题应与章节安排中第 ${chIndex} 章保持一致
+- 禁止在标题中使用"——"、破折号、连字符
+
+【exercises 规则】
+- 每个 exercise 对象只能包含以上 7 个字段：type、title、description、starterCode、testCases、language、difficulty。禁止添加其他字段
+- 共 ${qCount} 道编程题，至少 1 道
+
+【quiz 规则】
+- 每个 quiz 对象只能包含以上 4 个字段：question、options、correctIndex、explanation。禁止添加其他字段
+- options 必须恰好 4 项（A/B/C/D 开头），correctIndex 为 0-3 的整数
+- 共 ${quizCount} 道选择题
+
+【输出前自检清单】逐项确认后输出 JSON：
+□ 顶层只有 title、content、exercises、quiz 四个字段
+□ title 格式为"第${chIndex}章：xxx"，无"——"
+□ exercises 每个对象只有 7 个合法字段
+□ quiz 每个对象只有 4 个合法字段，options 恰好 4 项
+□ 首字符 {，末字符 }
+
+用中文撰写教学内容（代码除外）。`
 }
 
-function buildFinalCourseJson(params: { language: string; direction: string; difficulty: string; chapterCount: number; questionsPerChapter: number; extra: string }, outline: string): string {
+function buildFinalCourseJson(params: { language: string; direction: string; difficulty: string; chapterCount: number; questionsPerChapter: number; extra: string }): string {
   return JSON.stringify({
     language: params.language,
     title: `${params.language} ${params.direction}`,
-    description: outline.slice(0, 200),
     difficulty: params.difficulty,
     chapterCount: params.chapterCount,
     generatedAt: new Date().toISOString()

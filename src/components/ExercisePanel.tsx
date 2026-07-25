@@ -1,13 +1,10 @@
 import { Exercise } from '../types'
+import DifficultyBadge from './ui/DifficultyBadge'
 
 interface Props {
   exercise: Exercise | null
   loading: boolean
   onGenerate: () => void
-}
-
-const diffLabel: Record<string, string> = {
-  beginner: '入门', intermediate: '中级', advanced: '高级'
 }
 
 export default function ExercisePanel({ exercise, loading, onGenerate }: Props) {
@@ -34,9 +31,7 @@ export default function ExercisePanel({ exercise, loading, onGenerate }: Props) 
         <span className="text-xs px-2 py-0.5 rounded-full bg-accent/20 text-accent">
           {exercise.language}
         </span>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-accent-green/20 text-accent-green">
-          {diffLabel[exercise.difficulty] || exercise.difficulty}
-        </span>
+        <DifficultyBadge difficulty={exercise.difficulty} />
       </div>
 
       <div className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed mb-4">

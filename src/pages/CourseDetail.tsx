@@ -1,32 +1,15 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import ReactMarkdown from 'react-markdown'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { useCourseStore, genChapterId } from '../stores/course'
 import { chatStream } from '../lib/ipc'
 import type { Chapter, ChoiceQuestion, Exercise } from '../types'
 import ChatPanel from '../components/chat/ChatPanel'
 import ChapterExpander from '../components/ChapterExpander'
-
-const DIFF: Record<string, string> = { beginner: '入门', intermediate: '中级', advanced: '高级' }
-const ST_ICON: Record<string, string> = { done: '📚', generating: '📝', pending: '⬜' }
-
-function extractJson(text: string): string | null {
-  const m = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
-  return m ? m[1].trim() : null
-}
-
-function diffTag(d: string) {
-  if (d === 'beginner') return 'bg-accent-green/20 text-accent-green'
-  if (d === 'intermediate') return 'bg-accent-yellow/20 text-accent-yellow'
-  return 'bg-accent-red/20 text-accent-red'
-}
-
-function formatTime(ts: number): string {
-  const d = new Date(ts)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
+import { DIFFICULTY_LABEL, CHAPTER_STATUS_ICON, CHAPTER_LIMIT } from '../lib/constants'
+import { extractJson, formatDate, getDifficultyLabel, getDifficultyClass, getStatusIcon } from '../lib/utils'
+import MarkdownRenderer from '../components/ui/MarkdownRenderer'
+import DifficultyBadge from '../components/ui/DifficultyBadge'
+import ConfirmDialog from '../components/ui/ConfirmDialog'
 
 /* ================================================================
    QuizCard
@@ -87,9 +70,7 @@ function ExerciseCard({ ex, onOpen }: { ex: Exercise; onOpen: () => void }) {
           {ex.type === 'coding' ? '💻 编程题' : '📋 选择题'}
         </span>
         <span className="text-xs text-gray-500">{ex.language}</span>
-        <span className={`text-xs px-1.5 py-0.5 rounded ml-auto ${diffTag(ex.difficulty)}`}>
-          {DIFF[ex.difficulty] || ex.difficulty}
-        </span>
+        <DifficultyBadge difficulty={ex.difficulty} />
       </div>
       <h4 className="font-semibold text-sm mb-1.5">{ex.title}</h4>
       <p className="text-xs text-gray-400 mb-3">{ex.description}</p>
@@ -128,6 +109,7 @@ export default function CourseDetail() {
   const [expanding, setExpanding] = useState(false)
   const [showExpander, setShowExpander] = useState(false)
   const [expandText, setExpandText] = useState('')
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const [answers, setAnswers] = useState<Record<number, number>>({})
   const [revealed, setRevealed] = useState<Record<number, boolean>>({})
@@ -173,13 +155,13 @@ export default function CourseDetail() {
   }
 
   function handleExpand() {
-    if (expanding || course!.chapters.length >= 500) return
+    if (expanding || course!.chapters.length >= CHAPTER_LIMIT) return
     cleanup.current?.()
 
     const titles = course!.chapters.map(c => c.title).join('、')
     const prompt = `你是课程设计专家。为以下课程扩写 3-5 个新章节（按学习顺序排列）。
     
-课程：${course!.title}（${course!.language}，${DIFF[course!.difficulty]}）
+课程：${course!.title}（${course!.language}，${getDifficultyLabel(course!.difficulty)}）
 已有章节：${titles || '暂无'}
 
 用 \`\`\`json 输出，格式：{"chapters": [{"title": "第N章: 标题", "content": "Markdown 教学内容", "quiz": [], "exercises": []}]}
@@ -219,10 +201,7 @@ export default function CourseDetail() {
   }
 
   function handleDelete() {
-    if (confirm(`确定删除课程「${course!.title}」？此操作不可撤销。`)) {
-      deleteCourse(course!.id)
-      nav('/courses')
-    }
+    setConfirmOpen(true)
   }
 
   function openPlayground(ex: Exercise) {
@@ -244,13 +223,11 @@ export default function CourseDetail() {
             ← 返回
           </button>
           <h1 className="text-lg font-bold truncate">{course.title}</h1>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${diffTag(course.difficulty)} shrink-0`}>
-            {DIFF[course.difficulty]}
-          </span>
+          <DifficultyBadge difficulty={course.difficulty} />
         </div>
         <div className="flex gap-2 shrink-0">
           <button onClick={() => setShowExpander(!showExpander)}
-            disabled={expanding || course.chapters.length >= 500}
+            disabled={expanding || course.chapters.length >= CHAPTER_LIMIT}
             className="px-3 py-1.5 text-sm rounded-lg bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-50 transition-colors">
             {showExpander ? '收起扩写' : '扩写'}
           </button>
@@ -294,7 +271,7 @@ export default function CourseDetail() {
                       ? 'bg-accent/20 text-white'
                       : 'hover:bg-surface-dark text-gray-400'
                   }`}>
-                  <span className="text-xs shrink-0">{ST_ICON[c.status] || '⬜'}</span>
+                  <span className="text-xs shrink-0">{getStatusIcon(c.status) || '⬜'}</span>
                   <span className="truncate">{c.title}</span>
                 </button>
               ))
@@ -333,7 +310,7 @@ export default function CourseDetail() {
                       </div>
                       <div className="bg-surface-dark rounded-lg p-3">
                         <p className="text-2xs text-gray-500 uppercase tracking-wider mb-0.5">Difficulty</p>
-                        <p className="text-sm font-semibold">{DIFF[course.difficulty]}</p>
+                        <p className="text-sm font-semibold">{getDifficultyLabel(course.difficulty)}</p>
                       </div>
                       <div className="bg-surface-dark rounded-lg p-3">
                         <p className="text-2xs text-gray-500 uppercase tracking-wider mb-0.5">Chapters</p>
@@ -341,36 +318,9 @@ export default function CourseDetail() {
                       </div>
                       <div className="bg-surface-dark rounded-lg p-3">
                         <p className="text-2xs text-gray-500 uppercase tracking-wider mb-0.5">Created</p>
-                        <p className="text-sm font-semibold">{formatTime(course.createdAt)}</p>
+                        <p className="text-sm font-semibold">{formatDate(course.createdAt)}</p>
                       </div>
                     </div>
-
-                    {course.description && (
-                      <div className="bg-surface-dark rounded-lg p-4 mb-4">
-                        <p className="text-2xs text-gray-500 uppercase tracking-wider mb-1.5">Description</p>
-                        <div className="prose prose-invert prose-sm max-w-none">
-                          <ReactMarkdown
-                            components={{
-                              code({ className, children, ...props }: any) {
-                                const match = /language-(\w+)/.exec(className || '')
-                                const s = String(children).replace(/\n$/, '')
-                                if (match) {
-                                  return (
-                                    <SyntaxHighlighter style={oneDark} language={match[1]} PreTag="div"
-                                      customStyle={{ borderRadius: '0.5rem', fontSize: '0.8rem' }}>
-                                      {s}
-                                    </SyntaxHighlighter>
-                                  )
-                                }
-                                return <code className="bg-surface px-1.5 py-0.5 rounded text-accent text-xs" {...props}>{children}</code>
-                              }
-                            }}
-                          >
-                            {course.description}
-                          </ReactMarkdown>
-                        </div>
-                      </div>
-                    )}
 
                     <p className="text-gray-500 text-sm">← 点击左侧章节开始学习</p>
                   </div>
@@ -380,27 +330,7 @@ export default function CourseDetail() {
                     <h2 className="text-xl font-bold mb-6">{ch.title}</h2>
 
                     {ch.content ? (
-                      <div className="prose prose-invert prose-sm max-w-none mb-8">
-                        <ReactMarkdown
-                          components={{
-                            code({ className, children, ...props }: any) {
-                              const match = /language-(\w+)/.exec(className || '')
-                              const s = String(children).replace(/\n$/, '')
-                              if (match) {
-                                return (
-                                  <SyntaxHighlighter style={oneDark} language={match[1]} PreTag="div"
-                                    customStyle={{ borderRadius: '0.5rem', fontSize: '0.8rem' }}>
-                                    {s}
-                                  </SyntaxHighlighter>
-                                )
-                              }
-                              return <code className="bg-surface px-1.5 py-0.5 rounded text-accent text-xs" {...props}>{children}</code>
-                            }
-                          }}
-                        >
-                          {ch.content}
-                        </ReactMarkdown>
-                      </div>
+                      <MarkdownRenderer content={ch.content} />
                     ) : (
                       <div className="text-center text-gray-500 py-16 mb-8">
                         <p className="text-4xl mb-3">📝</p>
@@ -443,6 +373,13 @@ export default function CourseDetail() {
           </div>
         </main>
       </div>
+      <ConfirmDialog
+        open={confirmOpen}
+        title="确认删除"
+        message={`确定删除课程「${course.title}」？此操作不可撤销。`}
+        onConfirm={() => { deleteCourse(course.id); nav('/courses') }}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </div>
   )
 }

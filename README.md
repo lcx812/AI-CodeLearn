@@ -11,12 +11,13 @@ AI 驱动的编程语言学习桌面应用。本地运行，AI 动态生成课�
 | 层 | 选型 |
 |----|------|
 | 桌面框架 | Electron + electron-vite |
-| 前端 | React 18 + TypeScript 5 |
+| 前端 | React 18 + TypeScript 6.0 |
 | 样式 | Tailwind CSS 3（暗色主题） |
 | 状态管理 | Zustand |
 | 代码编辑器 | Monaco Editor（本地加载） |
 | AI API | 多平台支持（DeepSeek / Claude / OpenAI / 通义千问 / 智谱GLM / 自定义） |
 | 本地存储 | better-sqlite3（key-value 持久化） |
+| 测试 | Vitest 2.0（45 tests） |
 
 ## 快速启动
 
@@ -41,14 +42,14 @@ codelearn/
 │       ├── storage.ts      # 本地存储 IPC
 │       └── fs.ts           # 文件读取 IPC
 ├── src/                   # React 渲染进程
-│   ├── App.tsx            # 路由
+│   ├── App.tsx            # 路由（React.lazy 懒加载）
 │   ├── types.ts           # 全局类型定义
 │   ├── global.d.ts        # window.api 类型声明
 │   ├── stores/            # Zustand 状态
 │   │   ├── course.ts      # 多课程管理（courses[] + currentCourseId）
 │   │   ├── chat.ts        # 聊天记录
 │   │   └── settings.ts    # AI 设置
-│   ├── pages/             # 页面
+│   ├── pages/             # 7 个页面
 │   │   ├── Dashboard.tsx   # 仪表盘
 │   │   ├── Courses.tsx     # 课程列表 + AI 课程生成
 │   │   ├── CourseDetail.tsx# 课程详情（大纲 + 章节 + 题目 + AI 提问）
@@ -58,19 +59,29 @@ codelearn/
 │   │   └── Settings.tsx    # API 配置
 │   ├── components/        # 通用组件
 │   │   ├── Layout.tsx
-│   │   ├── Sidebar.tsx
+│   │   ├── Sidebar.tsx / TopBar.tsx / StatusBar.tsx
 │   │   ├── Editor.tsx      # Monaco 编辑器
 │   │   ├── CourseGenerator.tsx  # AI 课程生成面板（流式）
 │   │   ├── ChapterExpander.tsx  # 章节扩写面板（流式）
+│   │   ├── ExercisePanel.tsx    # 题目面板
+│   │   ├── ErrorBoundary.tsx    # React 错误边界
+│   │   ├── SuspenseLoader.tsx   # 懒加载 fallback
+│   │   ├── ui/                  # 共享 UI 组件（Spinner, ProgressBar, ErrorDisplay, MarkdownRenderer 等 7 个）
 │   │   └── chat/           # 聊天组件
 │   │       ├── ChatPanel.tsx
 │   │       ├── ChatInput.tsx
 │   │       ├── MessageList.tsx
 │   │       └── CourseDrawer.tsx
+│   ├── hooks/              # 自定义 Hooks
+│   │   ├── useStream.ts    # AI 流式响应
+│   │   └── useChat.ts      # 聊天逻辑
 │   └── lib/
-│       └── ipc.ts         # IPC 封装
-├── tests/                 # 测试
-└── docs/superpowers/      # 设计文档 + 实现计划
+│       ├── ipc.ts          # IPC 封装
+│       ├── constants.ts    # 全局常量
+│       ├── utils.ts        # 纯工具函数
+│       └── prompts.ts      # 前端 AI Prompt（4 个函数）
+├── tests/                  # 45 tests（lib/stores/electron）
+└── docs/superpowers/       # 设计文档 + 实现计划
     ├── specs/
     └── plans/
 ```
@@ -91,7 +102,7 @@ codelearn/
 
 ```typescript
 Course {
-  id: string; language: string; title: string; description: string
+  id: string; language: string; title: string
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   chapters: Chapter[]; createdAt: number; updatedAt: number
 }
@@ -118,11 +129,22 @@ Exercise {
 
 ## 约束规则
 
+### 课程生成
 - 单次课程生成 ≤ 20 章，单次扩写 ≤ 20 章
 - 单个课程累计 ≤ 500 章
-- AI 输出严格 JSON-only，禁止问候语和确认语
-- 所有 AI 调用通过主进程代理，API Key 加密存储
-- 扩写 JSON 解析三级兜底：直接解析 → { } 截取 → 代码块提取
+- 大纲只输出章节标题列表（`第x章：标题 —— 说明`），禁止课程概述/学习路径建议
+- 章节标题格式：`第x章：标题`（中文全角冒号），禁止 `——` 破折号连接
+- JSON 顶层字段白名单：title / content / exercises / quiz，禁止 description 等额外字段
+- exercise 字段白名单（7 个）：type / title / description / starterCode / testCases / language / difficulty
+- quiz 字段白名单（4 个）：question / options / correctIndex / explanation
+- options 必须恰好 4 项，correctIndex 为 0-3 整数
+- prompt 含格式铁律 + 输出前自检清单，提高 LLM 遵守率
+
+### 校验层（`normalizeChapter`）
+- 空值守卫 → 白名单过滤 → 破折号清洗 → 字段规范化
+- JSON 解析失败时发送错误事件，不静默变空章节
+- AI 调用通过主进程代理，API Key 加密存储
+- JSON 解析三级兜底：直接解析 → { } 截取 → 代码块提取
 
 ## 设计原则
 
@@ -143,12 +165,13 @@ An AI-powered desktop app for learning programming languages. Runs locally, with
 | Layer | Choice |
 |-------|--------|
 | Desktop Framework | Electron + electron-vite |
-| Frontend | React 18 + TypeScript 5 |
+| Frontend | React 18 + TypeScript 6.0 |
 | Styling | Tailwind CSS 3 (dark theme) |
 | State Management | Zustand |
 | Code Editor | Monaco Editor (local) |
 | AI API | Multi-platform (DeepSeek / Claude / OpenAI / Qwen / GLM / Custom) |
 | Local Storage | better-sqlite3 (key-value persistence) |
+| Testing | Vitest 2.0 (45 tests) |
 
 ## Quick Start
 
@@ -173,14 +196,14 @@ codelearn/
 │       ├── storage.ts      # Local storage IPC
 │       └── fs.ts           # File read IPC
 ├── src/                   # React renderer
-│   ├── App.tsx            # Routing
+│   ├── App.tsx            # Routing (React.lazy code-splitting)
 │   ├── types.ts           # Global type definitions
 │   ├── global.d.ts        # window.api type declarations
 │   ├── stores/            # Zustand stores
 │   │   ├── course.ts      # Multi-course management (courses[] + currentCourseId)
 │   │   ├── chat.ts        # Chat history
 │   │   └── settings.ts    # AI settings
-│   ├── pages/             # Pages
+│   ├── pages/             # 7 pages
 │   │   ├── Dashboard.tsx   # Dashboard
 │   │   ├── Courses.tsx     # Course list + AI course generation
 │   │   ├── CourseDetail.tsx# Course detail (outline + chapters + exercises + AI chat)
@@ -190,19 +213,29 @@ codelearn/
 │   │   └── Settings.tsx    # API configuration
 │   ├── components/        # Shared components
 │   │   ├── Layout.tsx
-│   │   ├── Sidebar.tsx
+│   │   ├── Sidebar.tsx / TopBar.tsx / StatusBar.tsx
 │   │   ├── Editor.tsx      # Monaco editor
 │   │   ├── CourseGenerator.tsx  # AI course generator (streaming)
 │   │   ├── ChapterExpander.tsx  # Chapter expander (streaming)
+│   │   ├── ExercisePanel.tsx    # Exercise panel
+│   │   ├── ErrorBoundary.tsx    # React error boundary
+│   │   ├── SuspenseLoader.tsx   # Lazy-load fallback
+│   │   ├── ui/                  # Shared UI (Spinner, ProgressBar, ErrorDisplay, MarkdownRenderer, etc. — 7 components)
 │   │   └── chat/           # Chat components
 │   │       ├── ChatPanel.tsx
 │   │       ├── ChatInput.tsx
 │   │       ├── MessageList.tsx
 │   │       └── CourseDrawer.tsx
+│   ├── hooks/              # Custom hooks
+│   │   ├── useStream.ts    # AI streaming response
+│   │   └── useChat.ts      # Chat logic
 │   └── lib/
-│       └── ipc.ts         # IPC wrapper
-├── tests/                 # Tests
-└── docs/superpowers/      # Design docs + implementation plans
+│       ├── ipc.ts          # IPC wrapper
+│       ├── constants.ts    # Global constants
+│       ├── utils.ts        # Pure utility functions
+│       └── prompts.ts      # Frontend AI prompts (4 functions)
+├── tests/                  # 45 tests (lib/stores/electron)
+└── docs/superpowers/       # Design docs + implementation plans
     ├── specs/
     └── plans/
 ```
@@ -223,7 +256,7 @@ codelearn/
 
 ```typescript
 Course {
-  id: string; language: string; title: string; description: string
+  id: string; language: string; title: string
   difficulty: 'beginner' | 'intermediate' | 'advanced'
   chapters: Chapter[]; createdAt: number; updatedAt: number
 }
@@ -250,11 +283,22 @@ Exercise {
 
 ## Constraints
 
+### Course Generation
 - Max 20 chapters per generation, max 20 per expansion
 - Max 500 chapters per course
-- AI output strictly JSON-only — no greetings or confirmations
+- Outline only outputs chapter title list (`第x章：标题 —— 说明`), no course overview/learning path text
+- Chapter title format: `第x章：标题` (full-width colon), no `——` dash separator
+- JSON top-level field whitelist: title / content / exercises / quiz — no extra fields like description
+- Exercise field whitelist (7): type / title / description / starterCode / testCases / language / difficulty
+- Quiz field whitelist (4): question / options / correctIndex / explanation
+- options must be exactly 4 items, correctIndex 0-3 integer
+- Prompt includes format iron rules + pre-output self-check checklist
+
+### Validation Layer (`normalizeChapter`)
+- Null guard → whitelist filter → dash cleanup → field normalization
+- JSON parse failure sends error event, no silent empty chapter
 - All AI calls proxied through main process, API keys encrypted at rest
-- Expansion JSON parsing with 3-tier fallback: direct parse → `{ }` extraction → code block extraction
+- JSON parsing with 3-tier fallback: direct parse → `{ }` extraction → code block extraction
 
 ## Design Principles
 

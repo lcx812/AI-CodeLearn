@@ -35,7 +35,6 @@ function initTables(db: Database.Database) {
       title TEXT NOT NULL,
       content TEXT NOT NULL,
       level TEXT DEFAULT 'beginner',
-      description TEXT DEFAULT '',
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
@@ -46,9 +45,6 @@ function initTables(db: Database.Database) {
 function migrateTables(db: Database.Database) {
   const cols = db.pragma('table_info(courses)') as { name: string }[]
   const names = cols.map(c => c.name)
-  if (!names.includes('description')) {
-    db.exec(`ALTER TABLE courses ADD COLUMN description TEXT DEFAULT ''`)
-  }
   if (!names.includes('updated_at')) {
     db.exec(`ALTER TABLE courses ADD COLUMN updated_at TEXT DEFAULT (datetime('now'))`)
   }

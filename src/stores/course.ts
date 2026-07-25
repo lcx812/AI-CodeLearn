@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { Course, Chapter } from '../types'
 import { loadProgress, saveProgress } from '../lib/ipc'
+import { genId, genChapterId } from '../lib/utils'
+import { CHAPTER_LIMIT } from '../lib/constants'
 
 interface CourseState {
   courses: Course[]
@@ -16,14 +18,6 @@ interface CourseState {
   updateChapter: (courseId: string, chapterId: string, updates: Partial<Chapter>) => void
   loadState: () => Promise<void>
   saveState: () => Promise<void>
-}
-
-export function genId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
-}
-
-export function genChapterId(): string {
-  return 'ch_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
 }
 
 const defaultLanguages = ['python', 'javascript', 'typescript', 'rust', 'go', 'java', 'c', 'cpp']
@@ -78,7 +72,7 @@ export const useCourseStore = create<CourseState>((set, get) => ({
   addChapters: (courseId, chapters) => {
     const courses = get().courses.map(c => {
       if (c.id !== courseId) return c
-      if (c.chapters.length + chapters.length > 500) return c
+      if (c.chapters.length + chapters.length > CHAPTER_LIMIT) return c
       return { ...c, chapters: [...c.chapters, ...chapters], updatedAt: Date.now() }
     })
     set({ courses })
@@ -114,3 +108,6 @@ export const useCourseStore = create<CourseState>((set, get) => ({
     await saveProgress('courses', courses)
   },
 }))
+
+// re-export for backward compatibility
+export { genId, genChapterId } from '../lib/utils'
