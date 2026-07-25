@@ -1,4 +1,5 @@
 import { useCourseStore } from '../stores/course'
+import ProgressBar from '../components/ui/ProgressBar'
 
 export default function Progress() {
   const courses = useCourseStore(s => s.courses)
@@ -34,9 +35,7 @@ export default function Progress() {
                   <span>{item.label}</span>
                   <span className="text-gray-400">{item.pct}%</span>
                 </div>
-                <div className="h-2 bg-surface-dark rounded-full overflow-hidden">
-                  <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${item.pct}%` }} />
-                </div>
+                <ProgressBar value={item.pct} />
               </div>
             ))}
           </div>

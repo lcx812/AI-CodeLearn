@@ -1,7 +1,5 @@
 import { Message } from '../../types'
-import ReactMarkdown from 'react-markdown'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
+import MarkdownRenderer from '../ui/MarkdownRenderer'
 
 interface MessageListProps {
   messages: Message[]
@@ -28,32 +26,14 @@ export default function MessageList({ messages, isStreaming, currentStream, onDe
             <button onClick={() => onDelete(msg.id)}
               className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-red-400 text-xs"
               title="删除">✕</button>
-            <ReactMarkdown
-              className="prose prose-invert prose-sm max-w-none"
-              components={{
-                code({ className, children, ...props }) {
-                  const match = /language-(\w+)/.exec(className || '')
-                  const codeStr = String(children).replace(/\n$/, '')
-                  if (match) {
-                    return (
-                      <SyntaxHighlighter style={oneDark} language={match[1]} PreTag="div" customStyle={{ borderRadius: '0.5rem', fontSize: '0.8rem' }}>
-                        {codeStr}
-                      </SyntaxHighlighter>
-                    )
-                  }
-                  return <code className="bg-surface-dark px-1.5 py-0.5 rounded text-accent text-xs" {...props}>{children}</code>
-                }
-              }}
-            >
-              {msg.content}
-            </ReactMarkdown>
+            <MarkdownRenderer content={msg.content} />
           </div>
         </div>
       ))}
       {isStreaming && currentStream && (
         <div className="flex justify-start">
           <div className="max-w-[80%] bg-surface-light rounded-xl p-4 text-gray-200">
-            <ReactMarkdown className="prose prose-invert prose-sm max-w-none">{currentStream}</ReactMarkdown>
+            <MarkdownRenderer content={currentStream} />
             <span className="inline-block w-2 h-4 bg-accent animate-pulse ml-0.5" />
           </div>
         </div>

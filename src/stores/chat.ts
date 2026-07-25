@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { Message } from '../types'
 import { chatStream, loadProgress, saveProgress } from '../lib/ipc'
+import { genId } from '../lib/utils'
 
 interface ChatState {
   messages: Message[]
@@ -12,9 +13,6 @@ interface ChatState {
   clearMessages: () => void
   loadHistory: () => Promise<void>
 }
-
-let idCounter = 0
-function genId() { return `msg_${Date.now()}_${idCounter++}` }
 
 let unsubscribeStream: (() => void) | null = null
 

@@ -1,5 +1,7 @@
 import { useCourseStore } from '../../stores/course'
 import { Chapter } from '../../types'
+import { CHAPTER_LIMIT } from '../../lib/constants'
+import { getStatusIcon } from '../../lib/utils'
 
 interface CourseDrawerProps {
   courseId: string
@@ -29,7 +31,7 @@ export default function CourseDrawer({ courseId, onChapterClick, onExpand }: Cou
               className="w-full text-left px-3 py-2 text-sm hover:bg-surface-light flex items-center gap-2 transition-colors"
             >
               <span className="text-xs">
-                {ch.status === 'done' ? '📚' : ch.status === 'generating' ? '📝' : '⬜'}
+                {getStatusIcon(ch.status)}
               </span>
               <span className="truncate">{ch.title}</span>
             </button>
@@ -39,10 +41,10 @@ export default function CourseDrawer({ courseId, onChapterClick, onExpand }: Cou
       <div className="p-2 border-t border-gray-700">
         <button
           onClick={onExpand}
-          disabled={course.chapters.length >= 500}
+          disabled={course.chapters.length >= CHAPTER_LIMIT}
           className="w-full px-3 py-2 text-xs rounded-lg bg-accent/20 text-accent hover:bg-accent/30 disabled:opacity-50 transition-colors"
         >
-          + 扩写课程（{course.chapters.length}/500）
+          + 扩写课程（{course.chapters.length}/{CHAPTER_LIMIT}）
         </button>
       </div>
     </div>

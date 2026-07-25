@@ -1,4 +1,4 @@
-const Store = require('electron-store')
+import Store from 'electron-store'
 
 export interface AISettings {
   globalProvider: string

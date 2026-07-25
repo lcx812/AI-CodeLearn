@@ -2,6 +2,10 @@ import { useState, useRef, useEffect } from 'react'
 import { CourseGenParams, Course, Chapter } from '../types'
 import { useCourseStore, genId, genChapterId } from '../stores/course'
 import { generateCourse } from '../lib/ipc'
+import { CHAPTER_COUNT_MAX, QUESTIONS_PER_CHAPTER_MAX } from '../lib/constants'
+import Spinner from './ui/Spinner'
+import ProgressBar from './ui/ProgressBar'
+import ErrorDisplay from './ui/ErrorDisplay'
 
 interface Props {
   onDone: () => void
@@ -95,7 +99,6 @@ export default function CourseGenerator({ onDone }: Props) {
           id: genId(),
           language: params.language.toLowerCase(),
           title: `${params.language} ${params.direction}`,
-          description: outlineRef.current?.slice(0, 200) || '',
           difficulty: params.difficulty as 'beginner' | 'intermediate' | 'advanced',
           chapters,
           createdAt: Date.now(),
@@ -169,9 +172,9 @@ export default function CourseGenerator({ onDone }: Props) {
             <input
               type="number"
               min={1}
-              max={20}
+              max={CHAPTER_COUNT_MAX}
               value={params.chapterCount}
-              onChange={e => updateParam('chapterCount', Math.max(1, Math.min(20, Number(e.target.value) || 1)))}
+              onChange={e => updateParam('chapterCount', Math.max(1, Math.min(CHAPTER_COUNT_MAX, Number(e.target.value) || 1)))}
               disabled={generating}
               className="w-full bg-surface border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent disabled:opacity-50"
             />
@@ -181,9 +184,9 @@ export default function CourseGenerator({ onDone }: Props) {
             <input
               type="number"
               min={1}
-              max={10}
+              max={QUESTIONS_PER_CHAPTER_MAX}
               value={params.questionsPerChapter}
-              onChange={e => updateParam('questionsPerChapter', Math.max(1, Math.min(10, Number(e.target.value) || 1)))}
+              onChange={e => updateParam('questionsPerChapter', Math.max(1, Math.min(QUESTIONS_PER_CHAPTER_MAX, Number(e.target.value) || 1)))}
               disabled={generating}
               className="w-full bg-surface border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent disabled:opacity-50"
             />
@@ -221,21 +224,14 @@ export default function CourseGenerator({ onDone }: Props) {
         )}
       </div>
 
-      {error && (
-        <div className="bg-accent-red/10 border border-accent-red/30 rounded-lg p-3 mb-4">
-          <p className="text-sm text-accent-red">{error}</p>
-        </div>
-      )}
+      {error && <ErrorDisplay message={error} />}
 
       {(generating || outline || chapterTitles.length > 0 || status) && (
         <div className="border-t border-gray-700 pt-4">
           {status && (
             <div className="flex items-center gap-2 mb-3">
               {generating && (
-                <svg className="animate-spin h-4 w-4 text-accent" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
+                <Spinner />
               )}
               <p className={`text-sm ${status === '生成完成！' ? 'text-accent-green' : status === '已取消' ? 'text-gray-500' : 'text-gray-300'}`}>
                 {status}
@@ -245,12 +241,7 @@ export default function CourseGenerator({ onDone }: Props) {
 
           {generating && totalChapters > 0 && (
             <div className="mb-3">
-              <div className="h-1.5 bg-surface rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-accent rounded-full transition-all duration-300"
-                  style={{ width: `${(currentChapter / totalChapters) * 100}%` }}
-                />
-              </div>
+              <ProgressBar value={currentChapter} max={totalChapters} />
             </div>
           )}
 
