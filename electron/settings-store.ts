@@ -18,19 +18,19 @@ const defaults: AppSettings = {
   }
 }
 
-let store: typeof Store | null = null
+let store: Store<AppSettings> | null = null
 
-export function getSettingsStore() {
-  if (!store) store = new Store({ name: 'settings', defaults })
+export function getSettingsStore(): Store<AppSettings> {
+  if (!store) store = new Store<AppSettings>({ name: 'settings', defaults })
   return store
 }
 
 export function getSettings(): AppSettings {
-  return getSettingsStore().store as unknown as AppSettings
+  return getSettingsStore().store
 }
 
 export function getAISettings(): AISettings {
-  return (getSettingsStore().get('ai') as AISettings) || defaults.ai
+  return getSettingsStore().get('ai') || defaults.ai
 }
 
 export function saveAISettings(ai: AISettings) {

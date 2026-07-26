@@ -14,38 +14,13 @@ export function getDb(): Database.Database {
 }
 
 function initTables(db: Database.Database) {
+  // 所有持久化（课程、聊天历史、进度）都走 progress KV 表
   db.exec(`
-    CREATE TABLE IF NOT EXISTS chat_history (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      role TEXT NOT NULL,
-      content TEXT NOT NULL,
-      language TEXT,
-      topic TEXT,
-      created_at TEXT DEFAULT (datetime('now'))
-    );
     CREATE TABLE IF NOT EXISTS progress (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       key TEXT UNIQUE NOT NULL,
       value TEXT NOT NULL,
       updated_at TEXT DEFAULT (datetime('now'))
     );
-    CREATE TABLE IF NOT EXISTS courses (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      language TEXT NOT NULL,
-      title TEXT NOT NULL,
-      content TEXT NOT NULL,
-      level TEXT DEFAULT 'beginner',
-      created_at TEXT DEFAULT (datetime('now')),
-      updated_at TEXT DEFAULT (datetime('now'))
-    );
   `)
-  migrateTables(db)
-}
-
-function migrateTables(db: Database.Database) {
-  const cols = db.pragma('table_info(courses)') as { name: string }[]
-  const names = cols.map(c => c.name)
-  if (!names.includes('updated_at')) {
-    db.exec(`ALTER TABLE courses ADD COLUMN updated_at TEXT DEFAULT (datetime('now'))`)
-  }
 }

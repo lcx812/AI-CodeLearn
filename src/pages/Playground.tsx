@@ -1,23 +1,22 @@
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSettingsStore } from '../stores/settings'
 import { useCourseStore } from '../stores/course'
-import { DIFFICULTY_LABEL } from '../lib/constants'
 import { getDifficultyLabel } from '../lib/utils'
 import Editor from '../components/Editor'
 import ExercisePanel from '../components/ExercisePanel'
-import { generatePlaygroundExercise, reviewCode, openFile, chatStream } from '../lib/ipc'
-import { Exercise, CodeReview, Course, Chapter } from '../types'
+import { generatePlaygroundExercise, reviewCode, openFile } from '../lib/ipc'
+import { Exercise, CodeReview, Chapter } from '../types'
+import ErrorDisplay from '../components/ui/ErrorDisplay'
+import { useChat } from '../hooks/useChat'
+
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e)
+}
 
 export default function Playground() {
   const isApiReady = useSettingsStore(s => s.isApiReady)
   const courses = useCourseStore(s => s.courses)
   const currentCourseId = useCourseStore(s => s.currentCourseId)
-
-  const course = useMemo(
-    () => courses.find(c => c.id === currentCourseId),
-    [courses, currentCourseId],
-  )
-  const currentLang = course?.language || 'python'
 
   const [selectedCourseId, setSelectedCourseId] = useState(currentCourseId || '')
   const [selectedChapterId, setSelectedChapterId] = useState('')
@@ -57,26 +56,39 @@ export default function Playground() {
   const [code, setCode] = useState('# 在此编写代码\n')
   const [exercise, setExercise] = useState<Exercise | null>(null)
   const [loading, setLoading] = useState(false)
+  const [genError, setGenError] = useState('')
   const [review, setReview] = useState<CodeReview | null>(null)
   const [reviewing, setReviewing] = useState(false)
+  const [reviewError, setReviewError] = useState('')
 
   const [showExercise, setShowExercise] = useState(true)
   const [showFeedback, setShowFeedback] = useState(false)
 
   const [followUpInput, setFollowUpInput] = useState('')
-  const [followUpMsgs, setFollowUpMsgs] = useState<{ role: string; content: string }[]>([])
-  const [followUpStreaming, setFollowUpStreaming] = useState(false)
-  const [streamingText, setStreamingText] = useState('')
-  const accumRef = useRef('')
-  const cleanupRef = useRef<(() => void) | null>(null)
+
+  // 追问上下文：题目 + 当前代码 + 上次审查结果（随状态动态重建）
+  const followUpPrompt = useMemo(() => {
+    if (!review) return ''
+    const ctx = [
+      '【题目要求】',
+      exercise?.description || '',
+      '',
+      '【学生代码】',
+      '```',
+      code,
+      '```',
+      '',
+      '【上次审查结果】',
+      JSON.stringify(review, null, 2),
+    ].join('\n')
+    return ['你是一位编程导师，请基于以下上下文回答学生的追问。', '上下文：', ctx].join('\n')
+  }, [exercise, code, review])
+
+  const followUp = useChat({ scope: 'local', systemPrompt: followUpPrompt })
 
   useEffect(() => {
     if (review) setShowFeedback(true)
   }, [review])
-
-  useEffect(() => {
-    return () => cleanupRef.current?.()
-  }, [])
 
   const buildCourseContext = (): string => {
     if (!selectedCourse) return ''
@@ -106,7 +118,8 @@ export default function Playground() {
     if (!isApiReady) return
     setLoading(true)
     setReview(null)
-    setFollowUpMsgs([])
+    setGenError('')
+    followUp.clear()
     setShowFeedback(false)
 
     const courseContext = buildCourseContext()
@@ -119,26 +132,11 @@ export default function Playground() {
         type: typeStr,
         courseContext,
       }) as Exercise
+      if (!ex || typeof ex !== 'object' || 'error' in ex) throw new Error('AI 返回格式异常，请重试')
       setExercise(ex)
       setCode(ex.starterCode || code)
-    } catch {
-      const fallbackEx: Exercise = {
-        type: 'coding',
-        title: 'Hello World 变体',
-        description:
-          '写一个函数 `greet(name)`，接收一个名字参数，返回 `"Hello, {name}!"` 字符串。\n\n要求：\n1. 函数名为 greet\n2. 如果 name 为空，返回 "Hello, World!"',
-        starterCode: currentLang === 'python'
-          ? 'def greet(name):\n    # 在此编写代码\n    pass\n'
-          : 'function greet(name) {\n  // 在此编写代码\n}\n',
-        testCases: [
-          { input: '"Alice"', expected: '"Hello, Alice!"' },
-          { input: '""', expected: '"Hello, World!"' },
-        ],
-        language: selectedLang,
-        difficulty: 'beginner',
-      }
-      setExercise(fallbackEx)
-      setCode(fallbackEx.starterCode || code)
+    } catch (e) {
+      setGenError(`题目生成失败：${errMsg(e)}`)
     }
     setLoading(false)
   }
@@ -146,18 +144,15 @@ export default function Playground() {
   const handleReview = async () => {
     if (!isApiReady || !exercise) return
     setReviewing(true)
-    setFollowUpMsgs([])
+    setReviewError('')
+    followUp.clear()
     try {
       const r = await reviewCode(code, exercise.description, selectedLang)
+      if (!r || typeof r !== 'object' || 'error' in r) throw new Error('AI 返回格式异常，请重试')
       setReview(r)
-    } catch {
-      setReview({
-        correctness: '代码结构基本正确',
-        style: '建议添加类型提示和文档字符串',
-        edgeCases: '未处理空输入边界情况',
-        suggestions: ['考虑边界条件的处理', '可以添加输入验证'],
-        score: 75,
-      })
+    } catch (e) {
+      setReviewError(`代码审查失败：${errMsg(e)}`)
+      setShowFeedback(true)
     }
     setReviewing(false)
   }
@@ -167,62 +162,15 @@ export default function Playground() {
     if (result) {
       setCode(result.content)
       setReview(null)
-      setFollowUpMsgs([])
+      followUp.clear()
     }
   }
 
   const handleSendFollowUp = () => {
     const q = followUpInput.trim()
-    if (!q || followUpStreaming || !review) return
-
-    const msg = { role: 'user', content: q }
-    setFollowUpMsgs(prev => [...prev, msg])
+    if (!q || followUp.isStreaming || !review) return
     setFollowUpInput('')
-    setFollowUpStreaming(true)
-    setStreamingText('')
-    accumRef.current = ''
-
-    const ctx = [
-      '【题目要求】',
-      exercise?.description || '',
-      '',
-      '【学生代码】',
-      '```',
-      code,
-      '```',
-      '',
-      '【上次审查结果】',
-      JSON.stringify(review, null, 2),
-    ].join('\n')
-
-    const systemPrompt = [
-      '你是一位编程导师，请基于以下上下文回答学生的追问。',
-      '上下文：',
-      ctx,
-    ].join('\n')
-
-    cleanupRef.current?.()
-
-    cleanupRef.current = chatStream(
-      [...followUpMsgs, msg].map(m => ({ role: m.role, content: m.content })),
-      systemPrompt,
-      chunk => {
-        accumRef.current += chunk
-        setStreamingText(accumRef.current)
-      },
-      () => {
-        setFollowUpMsgs(prev => [...prev, { role: 'assistant', content: accumRef.current }])
-        accumRef.current = ''
-        setStreamingText('')
-        setFollowUpStreaming(false)
-        cleanupRef.current = null
-      },
-      err => {
-        setFollowUpMsgs(prev => [...prev, { role: 'assistant', content: `错误: ${err}` }])
-        setFollowUpStreaming(false)
-        cleanupRef.current = null
-      },
-    )
+    followUp.send(q)
   }
 
   const scoreColor = (s: number) =>
@@ -349,6 +297,8 @@ export default function Playground() {
             <span>范围：{selectedChapterId ? chapters.find(c => c.id === selectedChapterId)?.title || '未知章节' : '整个课程'}</span>
           </div>
         )}
+
+        {exercise && genError && <ErrorDisplay message={genError} />}
       </div>
 
       <div className="flex-1 flex gap-4 min-h-0">
@@ -357,6 +307,7 @@ export default function Playground() {
             <ExercisePanel
               exercise={exercise}
               loading={loading}
+              error={genError}
               onGenerate={handleGenerate}
             />
           </div>
@@ -385,10 +336,13 @@ export default function Playground() {
         {showFeedback && (
           <div className="bg-surface-light rounded-xl mt-2 overflow-hidden">
             <div className="p-4 max-h-80 overflow-auto">
+              {reviewError && <ErrorDisplay message={reviewError} />}
               {!review ? (
-                <p className="text-sm text-gray-500">
-                  生成题目并提交代码后，AI 反馈将显示在这里
-                </p>
+                !reviewError && (
+                  <p className="text-sm text-gray-500">
+                    生成题目并提交代码后，AI 反馈将显示在这里
+                  </p>
+                )
               ) : (
                 <>
                   <div className="space-y-3 text-sm">
@@ -426,7 +380,7 @@ export default function Playground() {
 
                   <div className="mt-4 border-t border-gray-700 pt-4">
                     <div className="space-y-2 mb-3 max-h-40 overflow-auto">
-                      {followUpMsgs.map((m, i) => (
+                      {followUp.messages.map((m, i) => (
                         <div
                           key={i}
                           className={`text-sm p-2 rounded-lg ${
@@ -441,11 +395,11 @@ export default function Playground() {
                           <div className="whitespace-pre-wrap">{m.content}</div>
                         </div>
                       ))}
-                      {followUpStreaming && (
+                      {followUp.isStreaming && (
                         <div className="text-sm p-2 rounded-lg bg-surface-dark text-gray-200 mr-8">
                           <span className="font-semibold text-xs block mb-0.5">AI</span>
                           <div className="whitespace-pre-wrap">
-                            {streamingText}
+                            {followUp.currentStream}
                             <span className="inline-block w-1.5 h-4 bg-accent animate-pulse ml-0.5" />
                           </div>
                         </div>
@@ -458,12 +412,12 @@ export default function Playground() {
                         onChange={e => setFollowUpInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && handleSendFollowUp()}
                         placeholder="追问..."
-                        disabled={followUpStreaming}
+                        disabled={followUp.isStreaming}
                         className="flex-1 px-3 py-2 text-sm rounded-lg bg-surface-dark text-gray-200 placeholder-gray-500 border border-gray-700 focus:outline-none focus:border-accent disabled:opacity-50"
                       />
                       <button
                         onClick={handleSendFollowUp}
-                        disabled={!followUpInput.trim() || followUpStreaming}
+                        disabled={!followUpInput.trim() || followUp.isStreaming}
                         className="px-4 py-2 text-sm rounded-lg bg-accent text-surface-dark font-medium disabled:opacity-50 hover:bg-accent/90 transition-colors"
                       >
                         发送

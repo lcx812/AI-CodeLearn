@@ -1,6 +1,6 @@
 import { DIFFICULTY_LABEL, DIFFICULTY_CLASS, CHAPTER_STATUS_ICON, LANGUAGE_ICON } from './constants'
 
-/** 从文本中提取 JSON（支持 markdown 代码块和裸 JSON） */
+/** 从文本中提取 ```json 代码块内容（裸 JSON 返回 null） */
 export function extractJson(text: string): string | null {
   const m = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/)
   return m ? m[1].trim() : null

@@ -1,18 +1,21 @@
 import { Exercise } from '../types'
 import DifficultyBadge from './ui/DifficultyBadge'
+import ErrorDisplay from './ui/ErrorDisplay'
 
 interface Props {
   exercise: Exercise | null
   loading: boolean
+  error?: string
   onGenerate: () => void
 }
 
-export default function ExercisePanel({ exercise, loading, onGenerate }: Props) {
+export default function ExercisePanel({ exercise, loading, error = '', onGenerate }: Props) {
   if (!exercise) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center gap-4">
+      <div className="flex flex-col items-center justify-center h-full text-center gap-4 p-4">
         <div className="text-4xl">💡</div>
         <p className="text-gray-400 text-sm">还没有练习题目</p>
+        <ErrorDisplay message={error} />
         <button
           onClick={onGenerate}
           disabled={loading}
