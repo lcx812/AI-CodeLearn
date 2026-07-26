@@ -5,7 +5,8 @@ declare global {
     api: {
       ai: {
         chat: (messages: { role: string; content: string }[], systemPrompt: string) => Promise<string>
-        chatStream: (messages: { role: string; content: string }[], systemPrompt: string) => Promise<void>
+        chatStream: (messages: { role: string; content: string }[], systemPrompt: string, streamId: string) => Promise<void>
+        cancelStream: (streamId: string) => Promise<boolean>
         generateExercise: (lang: string, topic: string) => Promise<{
           title: string; description: string; starterCode: string
           testCases: { input: string; expected: string }[]
@@ -22,7 +23,7 @@ declare global {
         generateCourse: (params: {
           language: string; direction: string; difficulty: string
           chapterCount: number; questionsPerChapter: number; extra: string
-        }) => Promise<void>
+        }, streamId: string) => Promise<void>
         reviewCode: (code: string, task: string, lang: string) => Promise<{
           correctness: string; style: string; edgeCases: string; suggestions: string[]; score: number
         }>
@@ -43,13 +44,13 @@ declare global {
       fs: {
         openFile: () => Promise<{ name: string; content: string; path: string } | null>
       }
-      onStreamChunk: (cb: (chunk: string) => void) => () => void
-      onStreamDone: (cb: () => void) => () => void
-      onStreamError: (cb: (err: string) => void) => () => void
+      onStreamChunk: (cb: (streamId: string, chunk: string) => void) => () => void
+      onStreamDone: (cb: (streamId: string) => void) => () => void
+      onStreamError: (cb: (streamId: string, err: string) => void) => () => void
       /** 课程生成专用流事件 */
-      onCourseOutline: (cb: (outline: string) => void) => () => void
-      onCourseChapter: (cb: (data: { index: number; total: number; chapterJson: string }) => void) => () => void
-      onCourseDone: (cb: (courseJson: string) => void) => () => void
+      onCourseOutline: (cb: (streamId: string, outline: string) => void) => () => void
+      onCourseChapter: (cb: (streamId: string, data: { index: number; total: number; chapterJson: string }) => void) => () => void
+      onCourseDone: (cb: (streamId: string, courseJson: string) => void) => () => void
     }
   }
 }

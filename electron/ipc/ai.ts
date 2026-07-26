@@ -19,18 +19,30 @@ function getActiveConfig(functionType?: string): ProviderConfig {
 }
 
 export function registerAiHandlers() {
+  // 进行中的 chat 流：streamId → AbortController（用于 ai:chat-cancel）
+  const chatStreams = new Map<string, AbortController>()
+
   ipcMain.handle('settings:get-ai', () => getAISettings())
   ipcMain.handle('settings:save-ai', (_e, ai: AISettings) => {
     saveAISettings(ai)
     return true
   })
 
-  // ai:chat-stream
-  ipcMain.handle('ai:chat-stream', async (event, messages: { role: string; content: string }[], systemPrompt: string) => {
+  ipcMain.handle('ai:chat-cancel', (_e, streamId: string) => {
+    chatStreams.get(streamId)?.abort()
+    chatStreams.delete(streamId)
+    return true
+  })
+
+  // ai:chat-stream（事件负载带 streamId，渲染层按 id 过滤，避免多流串扰）
+  ipcMain.handle('ai:chat-stream', async (event, messages: { role: string; content: string }[], systemPrompt: string, streamId: string) => {
     const config = getActiveConfig('chat')
     const { client, model, type } = buildClient(config)
     const win = BrowserWindow.fromWebContents(event.sender)
     if (!win) throw new Error('No window')
+
+    const ac = new AbortController()
+    chatStreams.set(streamId, ac)
 
     try {
       if (type === 'openai-compat') {
@@ -42,10 +54,10 @@ export function registerAiHandlers() {
             ...messages.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }))
           ],
           stream: true
-        })
+        }, { signal: ac.signal })
         for await (const chunk of stream) {
           const text = chunk.choices?.[0]?.delta?.content
-          if (text) win.webContents.send('ai:stream-chunk', text)
+          if (text) win.webContents.send('ai:stream-chunk', { streamId, chunk: text })
         }
       } else {
         const anthClient = client as Anthropic
@@ -57,17 +69,21 @@ export function registerAiHandlers() {
             role: m.role as 'user' | 'assistant',
             content: m.content
           }))
-        })
+        }, { signal: ac.signal })
         for await (const chunk of stream) {
           if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-            win.webContents.send('ai:stream-chunk', chunk.delta.text)
+            win.webContents.send('ai:stream-chunk', { streamId, chunk: chunk.delta.text })
           }
         }
       }
-      win.webContents.send('ai:stream-done')
+      win.webContents.send('ai:stream-done', { streamId })
     } catch (err: unknown) {
+      // 取消导致的 abort：前端已停止监听，静默退出
+      if (ac.signal.aborted) return
       const message = err instanceof Error ? err.message : 'Unknown error'
-      win.webContents.send('ai:stream-error', message)
+      win.webContents.send('ai:stream-error', { streamId, message })
+    } finally {
+      chatStreams.delete(streamId)
     }
   })
 
@@ -103,11 +119,11 @@ export function registerAiHandlers() {
     }
   })
 
-  // ai:generate-course — 流式课程生成（大纲 → 逐章生成）
+  // ai:generate-course — 流式课程生成（大纲 → 逐章生成），事件负载带 streamId
   ipcMain.handle('ai:generate-course', async (event, params: {
     language: string; direction: string; difficulty: string
     chapterCount: number; questionsPerChapter: number; extra: string
-  }) => {
+  }, streamId: string) => {
     const config = getActiveConfig('courseGen')
     const { client, model, type } = buildClient(config)
     const win = BrowserWindow.fromWebContents(event.sender)
@@ -123,7 +139,7 @@ export function registerAiHandlers() {
         '你是编程教育专家，擅长设计系统化的编程课程大纲。用中文回复。',
         outlinePrompt
       )
-      win.webContents.send('ai:course-outline', outlineText)
+      win.webContents.send('ai:course-outline', { streamId, outline: outlineText })
 
       // Step 2: 逐章生成
       for (let i = 0; i < chCount; i++) {
@@ -134,11 +150,12 @@ export function registerAiHandlers() {
         )
         const parsed = parseJsonResponse(chText)
         if (parsed && typeof parsed === 'object' && 'error' in parsed) {
-          win.webContents.send('ai:stream-error', `第 ${i + 1} 章 JSON 解析失败: ${(parsed as any).raw || 'unknown'}`)
+          win.webContents.send('ai:stream-error', { streamId, message: `第 ${i + 1} 章 JSON 解析失败: ${(parsed as any).raw || 'unknown'}` })
           return
         }
         const normalized = normalizeChapter(parsed, i + 1)
         win.webContents.send('ai:course-chapter', {
+          streamId,
           index: i,
           total: chCount,
           chapterJson: JSON.stringify(normalized)
@@ -147,10 +164,10 @@ export function registerAiHandlers() {
 
       // Step 3: 组装最终课程 JSON
       const courseJson = buildFinalCourseJson(params)
-      win.webContents.send('ai:course-done', courseJson)
+      win.webContents.send('ai:course-done', { streamId, courseJson })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error'
-      win.webContents.send('ai:stream-error', message)
+      win.webContents.send('ai:stream-error', { streamId, message })
     }
   })
 

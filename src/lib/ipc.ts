@@ -1,3 +1,9 @@
+import { genId } from './utils'
+
+function errMsg(e: unknown): string {
+  return e instanceof Error ? e.message : String(e)
+}
+
 export function getAISettings(): Promise<{
   globalProvider: string
   providers: Record<string, { apiKey: string; baseURL?: string; model?: string }>
@@ -33,12 +39,31 @@ export function chatStream(
   onDone: () => void,
   onError: (err: string) => void
 ): () => void {
-  const unsubs: (() => void)[] = []
-  unsubs.push(window.api.onStreamChunk(onChunk))
-  unsubs.push(window.api.onStreamDone(onDone))
-  unsubs.push(window.api.onStreamError(onError))
-  window.api.ai.chatStream(messages, systemPrompt)
-  return () => unsubs.forEach(fn => fn())
+  // streamId 贯穿全链：主进程事件负载带 id，此处按 id 过滤，避免多流/课程生成串扰
+  const streamId = genId()
+  let active = true
+
+  const unsubs: (() => void)[] = [
+    window.api.onStreamChunk((id, chunk) => { if (active && id === streamId) onChunk(chunk) }),
+    window.api.onStreamDone((id) => { if (active && id === streamId) { dispose(); onDone() } }),
+    window.api.onStreamError((id, err) => { if (active && id === streamId) { dispose(); onError(err) } }),
+  ]
+
+  // done/error 后自动取消订阅，避免监听器泄漏
+  function dispose() {
+    active = false
+    unsubs.forEach(fn => fn())
+  }
+
+  window.api.ai.chatStream(messages, systemPrompt, streamId)
+    .catch(e => { if (active) { dispose(); onError(errMsg(e)) } })
+
+  // 取消：停止监听 + 通知主进程中断流（省 token）
+  return () => {
+    const wasActive = active
+    dispose()
+    if (wasActive) window.api.ai.cancelStream(streamId).catch(() => { /* 流可能已结束 */ })
+  }
 }
 
 export function generateExercise(lang: string, topic: string) {
@@ -67,11 +92,23 @@ export function generateCourse(
   onDone: (courseJson: string) => void,
   onError: (err: string) => void
 ): () => void {
-  const unsubs: (() => void)[] = []
-  unsubs.push(window.api.onCourseOutline(onOutline))
-  unsubs.push(window.api.onCourseChapter(onChapter))
-  unsubs.push(window.api.onCourseDone(onDone))
-  unsubs.push(window.api.onStreamError(onError))
-  window.api.ai.generateCourse(params)
-  return () => unsubs.forEach(fn => fn())
+  const streamId = genId()
+  let active = true
+
+  const unsubs: (() => void)[] = [
+    window.api.onCourseOutline((id, outline) => { if (active && id === streamId) onOutline(outline) }),
+    window.api.onCourseChapter((id, data) => { if (active && id === streamId) onChapter(data) }),
+    window.api.onCourseDone((id, courseJson) => { if (active && id === streamId) { dispose(); onDone(courseJson) } }),
+    window.api.onStreamError((id, err) => { if (active && id === streamId) { dispose(); onError(err) } }),
+  ]
+
+  function dispose() {
+    active = false
+    unsubs.forEach(fn => fn())
+  }
+
+  window.api.ai.generateCourse(params, streamId)
+    .catch(e => { if (active) { dispose(); onError(errMsg(e)) } })
+
+  return dispose
 }
