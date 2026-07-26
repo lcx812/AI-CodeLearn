@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { ChevronDown, ChevronRight } from 'lucide-react'
 import { useSettingsStore } from '../stores/settings'
 import { useCourseStore } from '../stores/course'
 import { getDifficultyLabel } from '../lib/utils'
@@ -12,6 +13,8 @@ import { useChat } from '../hooks/useChat'
 function errMsg(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
 }
+
+const selectClass = 'px-2.5 py-1.5 text-sm rounded-lg bg-surface-light text-ink border border-line focus:outline-none focus:border-accent'
 
 export default function Playground() {
   const isApiReady = useSettingsStore(s => s.isApiReady)
@@ -181,10 +184,12 @@ export default function Playground() {
       <div className="flex-shrink-0 mb-3 space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold">练习场</h2>
+            <h2 className="text-2xl font-bold">
+              <span className="text-ink-muted">$ </span>练习场
+            </h2>
             <button
               onClick={() => setShowExercise(!showExercise)}
-              className="px-2 py-1 text-xs rounded bg-surface-light text-gray-400 hover:text-white transition-colors"
+              className="px-2 py-1 text-xs rounded bg-surface-light text-ink-muted hover:text-ink transition-colors"
               title={showExercise ? '隐藏题目' : '显示题目'}
             >
               {showExercise ? '隐藏题目' : '显示题目'}
@@ -193,7 +198,7 @@ export default function Playground() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleUpload}
-              className="px-4 py-2 bg-surface-light text-gray-300 rounded-lg text-sm font-medium hover:bg-surface-dark transition-colors"
+              className="px-4 py-2 bg-surface-light text-ink rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
             >
               上传文件
             </button>
@@ -209,11 +214,11 @@ export default function Playground() {
 
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-1.5">
-            <label className="text-xs text-gray-500 whitespace-nowrap">课程</label>
+            <label className="text-xs text-ink-muted whitespace-nowrap">课程</label>
             <select
               value={selectedCourseId}
               onChange={e => setSelectedCourseId(e.target.value)}
-              className="px-2.5 py-1.5 text-sm rounded-lg bg-surface-light text-gray-200 border border-gray-700 focus:outline-none focus:border-accent"
+              className={selectClass}
             >
               {courses.length === 0 && (
                 <option value="">尚无课程</option>
@@ -227,11 +232,11 @@ export default function Playground() {
           </div>
 
           <div className="flex items-center gap-1.5">
-            <label className="text-xs text-gray-500 whitespace-nowrap">章节</label>
+            <label className="text-xs text-ink-muted whitespace-nowrap">章节</label>
             <select
               value={selectedChapterId}
               onChange={e => setSelectedChapterId(e.target.value)}
-              className="px-2.5 py-1.5 text-sm rounded-lg bg-surface-light text-gray-200 border border-gray-700 focus:outline-none focus:border-accent"
+              className={selectClass}
               disabled={!selectedCourseId || chapters.length === 0}
             >
               <option value="">整个课程</option>
@@ -244,24 +249,24 @@ export default function Playground() {
           </div>
 
           <div className="flex items-center gap-1.5">
-            <label className="text-xs text-gray-500 whitespace-nowrap">类型</label>
-            <div className="flex rounded-lg bg-surface-light p-0.5">
+            <label className="text-xs text-ink-muted whitespace-nowrap">类型</label>
+            <div className="flex rounded-lg bg-surface-light border border-line p-0.5">
               <button
                 onClick={() => setExerciseType('project')}
-                className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                className={`px-3 py-1 text-xs rounded-sm transition-colors ${
                   exerciseType === 'project'
                     ? 'bg-accent text-surface-dark font-medium'
-                    : 'text-gray-400 hover:text-white'
+                    : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 综合项目
               </button>
               <button
                 onClick={() => setExerciseType('exercise')}
-                className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                className={`px-3 py-1 text-xs rounded-sm transition-colors ${
                   exerciseType === 'exercise'
                     ? 'bg-accent text-surface-dark font-medium'
-                    : 'text-gray-400 hover:text-white'
+                    : 'text-ink-muted hover:text-ink'
                 }`}
               >
                 章节练习
@@ -270,13 +275,13 @@ export default function Playground() {
           </div>
 
           <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
-            <label className="text-xs text-gray-500 whitespace-nowrap">方向</label>
+            <label className="text-xs text-ink-muted whitespace-nowrap">方向</label>
             <input
               value={direction}
               onChange={e => setDirection(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleGenerate()}
               placeholder="例如：多线程文件下载器"
-              className="flex-1 px-2.5 py-1.5 text-sm rounded-lg bg-surface-light text-gray-200 placeholder-gray-500 border border-gray-700 focus:outline-none focus:border-accent"
+              className="flex-1 px-2.5 py-1.5 text-sm rounded-lg bg-surface-light text-ink placeholder-ink-muted/60 border border-line focus:outline-none focus:border-accent"
             />
             <button
               onClick={handleGenerate}
@@ -289,7 +294,7 @@ export default function Playground() {
         </div>
 
         {selectedCourse && (
-          <div className="flex items-center gap-2 text-xs text-gray-600">
+          <div className="flex items-center gap-2 text-xs text-ink-muted/60">
             <span>语言：{selectedLang}</span>
             <span>|</span>
             <span>难度：{getDifficultyLabel(selectedCourse.difficulty)}</span>
@@ -303,7 +308,7 @@ export default function Playground() {
 
       <div className="flex-1 flex gap-4 min-h-0">
         {showExercise && (
-          <div className="w-80 bg-surface-light rounded-xl overflow-hidden flex-shrink-0">
+          <div className="w-80 bg-surface-light border border-line rounded-xl overflow-hidden flex-shrink-0">
             <ExercisePanel
               exercise={exercise}
               loading={loading}
@@ -312,7 +317,7 @@ export default function Playground() {
             />
           </div>
         )}
-        <div className="flex-1 bg-surface-dark rounded-xl overflow-hidden">
+        <div className="flex-1 bg-surface-dark border border-line rounded-xl overflow-hidden">
           <Editor
             language={exercise?.language || selectedLang}
             value={code}
@@ -324,22 +329,22 @@ export default function Playground() {
       <div className="flex-shrink-0 mt-4">
         <button
           onClick={() => setShowFeedback(!showFeedback)}
-          className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-surface-light text-gray-300 hover:text-white transition-colors"
+          className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-surface-light text-ink-muted hover:text-ink transition-colors"
         >
           <span>AI 反馈</span>
-          <span>{showFeedback ? '▼' : '▶'}</span>
+          {showFeedback ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           {!showFeedback && review && (
             <span className="w-2 h-2 rounded-full bg-accent-green" />
           )}
         </button>
 
         {showFeedback && (
-          <div className="bg-surface-light rounded-xl mt-2 overflow-hidden">
+          <div className="bg-surface-light border border-line rounded-xl mt-2 overflow-hidden">
             <div className="p-4 max-h-80 overflow-auto">
               {reviewError && <ErrorDisplay message={reviewError} />}
               {!review ? (
                 !reviewError && (
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-ink-muted">
                     生成题目并提交代码后，AI 反馈将显示在这里
                   </p>
                 )
@@ -347,29 +352,29 @@ export default function Playground() {
                 <>
                   <div className="space-y-3 text-sm">
                     <div>
-                      <span className="text-gray-400">正确性：</span>
+                      <span className="text-ink-muted">正确性：</span>
                       {review.correctness}
                     </div>
                     <div>
-                      <span className="text-gray-400">代码风格：</span>
+                      <span className="text-ink-muted">代码风格：</span>
                       {review.style}
                     </div>
                     {review.edgeCases && (
                       <div>
-                        <span className="text-gray-400">边界处理：</span>
+                        <span className="text-ink-muted">边界处理：</span>
                         {review.edgeCases}
                       </div>
                     )}
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-400">评分：</span>
+                      <span className="text-ink-muted">评分：</span>
                       <span className={`font-bold ${scoreColor(review.score)}`}>
                         {review.score}/100
                       </span>
                     </div>
                     {review.suggestions.length > 0 && (
                       <div>
-                        <div className="text-gray-400 mb-1">改进建议：</div>
-                        <ul className="list-disc list-inside space-y-1 text-gray-300">
+                        <div className="text-ink-muted mb-1">改进建议：</div>
+                        <ul className="list-disc list-inside space-y-1 text-ink">
                           {review.suggestions.map((s, i) => (
                             <li key={i}>{s}</li>
                           ))}
@@ -378,15 +383,15 @@ export default function Playground() {
                     )}
                   </div>
 
-                  <div className="mt-4 border-t border-gray-700 pt-4">
+                  <div className="mt-4 border-t border-line pt-4">
                     <div className="space-y-2 mb-3 max-h-40 overflow-auto">
                       {followUp.messages.map((m, i) => (
                         <div
                           key={i}
                           className={`text-sm p-2 rounded-lg ${
                             m.role === 'user'
-                              ? 'bg-accent/10 text-blue-300 ml-8'
-                              : 'bg-surface-dark text-gray-200 mr-8'
+                              ? 'bg-accent/10 text-accent ml-8'
+                              : 'bg-surface-dark text-ink mr-8'
                           }`}
                         >
                           <span className="font-semibold text-xs block mb-0.5">
@@ -396,7 +401,7 @@ export default function Playground() {
                         </div>
                       ))}
                       {followUp.isStreaming && (
-                        <div className="text-sm p-2 rounded-lg bg-surface-dark text-gray-200 mr-8">
+                        <div className="text-sm p-2 rounded-lg bg-surface-dark text-ink mr-8">
                           <span className="font-semibold text-xs block mb-0.5">AI</span>
                           <div className="whitespace-pre-wrap">
                             {followUp.currentStream}
@@ -413,7 +418,7 @@ export default function Playground() {
                         onKeyDown={e => e.key === 'Enter' && handleSendFollowUp()}
                         placeholder="追问..."
                         disabled={followUp.isStreaming}
-                        className="flex-1 px-3 py-2 text-sm rounded-lg bg-surface-dark text-gray-200 placeholder-gray-500 border border-gray-700 focus:outline-none focus:border-accent disabled:opacity-50"
+                        className="flex-1 px-3 py-2 text-sm rounded-lg bg-surface-dark text-ink placeholder-ink-muted/60 border border-line focus:outline-none focus:border-accent disabled:opacity-50"
                       />
                       <button
                         onClick={handleSendFollowUp}

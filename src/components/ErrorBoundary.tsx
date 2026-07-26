@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
+import { TriangleAlert } from 'lucide-react'
 
 interface Props {
   children: ReactNode
@@ -34,9 +35,9 @@ export default class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="flex flex-col items-center justify-center h-full text-center gap-4 p-8">
-          <div className="text-5xl">⚠️</div>
-          <h2 className="text-xl font-bold text-white">页面出错了</h2>
-          <p className="text-sm text-gray-400 max-w-md">
+          <TriangleAlert className="h-10 w-10 text-accent-red" />
+          <h2 className="text-xl font-bold text-ink">页面出错了</h2>
+          <p className="text-sm text-ink-muted max-w-md">
             {this.state.error?.message || '发生了未知错误'}
           </p>
           <button

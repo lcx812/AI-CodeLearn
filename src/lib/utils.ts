@@ -1,3 +1,5 @@
+import { Circle, FileCode } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { DIFFICULTY_LABEL, DIFFICULTY_CLASS, CHAPTER_STATUS_ICON, LANGUAGE_ICON } from './constants'
 
 /** 从文本中提取 ```json 代码块内容（裸 JSON 返回 null） */
@@ -22,14 +24,14 @@ export function getDifficultyClass(d: string): string {
   return DIFFICULTY_CLASS[d] || 'bg-gray-500/20 text-gray-400'
 }
 
-/** 章节状态 → 图标 */
-export function getStatusIcon(status: string): string {
-  return CHAPTER_STATUS_ICON[status] || '⬜'
+/** 章节状态 → 图标组件 */
+export function getStatusIcon(status: string): LucideIcon {
+  return CHAPTER_STATUS_ICON[status] || Circle
 }
 
-/** 语言 → 图标（含回退） */
-export function getLanguageIcon(lang: string): string {
-  return LANGUAGE_ICON[lang.toLowerCase()] || '📄'
+/** 语言 → 图标组件（含回退） */
+export function getLanguageIcon(lang: string): LucideIcon {
+  return LANGUAGE_ICON[lang.toLowerCase()] || FileCode
 }
 
 /** 生成唯一 ID */

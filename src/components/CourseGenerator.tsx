@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { Check } from 'lucide-react'
 import { CourseGenParams, Course, Chapter } from '../types'
 import { useCourseStore, genId, genChapterId } from '../stores/course'
 import { generateCourse } from '../lib/ipc'
@@ -16,6 +17,8 @@ const difficultyOptions = [
   { value: 'intermediate', label: '中级' },
   { value: 'advanced', label: '高级' }
 ]
+
+const inputClass = 'w-full bg-surface-dark border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-muted/60 focus:outline-none focus:border-accent disabled:opacity-50'
 
 export default function CourseGenerator({ onDone }: Props) {
   const addCourse = useCourseStore(s => s.addCourse)
@@ -127,39 +130,39 @@ export default function CourseGenerator({ onDone }: Props) {
   }
 
   return (
-    <div className="bg-surface-light rounded-xl p-6 border border-gray-700">
+    <div className="bg-surface-light rounded-xl p-6 border border-line">
       <h3 className="text-lg font-semibold mb-4">AI 课程生成</h3>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">编程语言</label>
+          <label className="block text-sm text-ink-muted mb-1">编程语言</label>
           <input
             type="text"
             value={params.language}
             onChange={e => updateParam('language', e.target.value)}
             placeholder="例如: Python, Rust, Go..."
             disabled={generating}
-            className="w-full bg-surface border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent disabled:opacity-50"
+            className={inputClass}
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">学习方向</label>
+          <label className="block text-sm text-ink-muted mb-1">学习方向</label>
           <input
             type="text"
             value={params.direction}
             onChange={e => updateParam('direction', e.target.value)}
             placeholder="例如: 零基础入门, 异步编程..."
             disabled={generating}
-            className="w-full bg-surface border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent disabled:opacity-50"
+            className={inputClass}
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">难度</label>
+          <label className="block text-sm text-ink-muted mb-1">难度</label>
           <select
             value={params.difficulty}
             onChange={e => updateParam('difficulty', e.target.value)}
             disabled={generating}
-            className="w-full bg-surface border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent disabled:opacity-50"
+            className={inputClass}
           >
             {difficultyOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -168,7 +171,7 @@ export default function CourseGenerator({ onDone }: Props) {
         </div>
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="block text-sm text-gray-400 mb-1">章节数</label>
+            <label className="block text-sm text-ink-muted mb-1">章节数</label>
             <input
               type="number"
               min={1}
@@ -176,11 +179,11 @@ export default function CourseGenerator({ onDone }: Props) {
               value={params.chapterCount}
               onChange={e => updateParam('chapterCount', Math.max(1, Math.min(CHAPTER_COUNT_MAX, Number(e.target.value) || 1)))}
               disabled={generating}
-              className="w-full bg-surface border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent disabled:opacity-50"
+              className={inputClass}
             />
           </div>
           <div className="flex-1">
-            <label className="block text-sm text-gray-400 mb-1">每章题目</label>
+            <label className="block text-sm text-ink-muted mb-1">每章题目</label>
             <input
               type="number"
               min={1}
@@ -188,21 +191,21 @@ export default function CourseGenerator({ onDone }: Props) {
               value={params.questionsPerChapter}
               onChange={e => updateParam('questionsPerChapter', Math.max(1, Math.min(QUESTIONS_PER_CHAPTER_MAX, Number(e.target.value) || 1)))}
               disabled={generating}
-              className="w-full bg-surface border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent disabled:opacity-50"
+              className={inputClass}
             />
           </div>
         </div>
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm text-gray-400 mb-1">额外要求（可选）</label>
+        <label className="block text-sm text-ink-muted mb-1">额外要求（可选）</label>
         <textarea
           value={params.extra}
           onChange={e => updateParam('extra', e.target.value)}
           placeholder="例如: 多讲实战项目, 重点解释概念原理..."
           disabled={generating}
           rows={2}
-          className="w-full bg-surface border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent resize-none disabled:opacity-50"
+          className={`resize-none ${inputClass}`}
         />
       </div>
 
@@ -217,7 +220,7 @@ export default function CourseGenerator({ onDone }: Props) {
         {generating && (
           <button
             onClick={handleCancel}
-            className="px-4 py-2 bg-surface border border-gray-600 text-gray-300 rounded-lg text-sm hover:bg-surface-dark transition-colors"
+            className="px-4 py-2 bg-surface border border-line text-ink-muted rounded-lg text-sm hover:bg-surface-dark hover:text-ink transition-colors"
           >
             取消
           </button>
@@ -227,13 +230,13 @@ export default function CourseGenerator({ onDone }: Props) {
       {error && <ErrorDisplay message={error} />}
 
       {(generating || outline || chapterTitles.length > 0 || status) && (
-        <div className="border-t border-gray-700 pt-4">
+        <div className="border-t border-line pt-4">
           {status && (
             <div className="flex items-center gap-2 mb-3">
               {generating && (
                 <Spinner />
               )}
-              <p className={`text-sm ${status === '生成完成！' ? 'text-accent-green' : status === '已取消' ? 'text-gray-500' : 'text-gray-300'}`}>
+              <p className={`text-sm ${status === '生成完成！' ? 'text-accent-green' : status === '已取消' ? 'text-ink-muted' : 'text-ink'}`}>
                 {status}
               </p>
             </div>
@@ -247,8 +250,8 @@ export default function CourseGenerator({ onDone }: Props) {
 
           {outline && (
             <div className="mb-3">
-              <p className="text-xs text-gray-500 mb-1 uppercase tracking-wide">课程大纲</p>
-              <div className="bg-surface rounded-lg p-3 text-sm text-gray-300 max-h-48 overflow-y-auto whitespace-pre-wrap">
+              <p className="text-xs text-ink-muted mb-1 uppercase tracking-wide">课程大纲</p>
+              <div className="bg-surface-dark border border-line rounded-lg p-3 text-sm text-ink max-h-48 overflow-y-auto whitespace-pre-wrap">
                 {outline}
               </div>
             </div>
@@ -256,15 +259,15 @@ export default function CourseGenerator({ onDone }: Props) {
 
           {chapterTitles.length > 0 && (
             <div>
-              <p className="text-xs text-gray-500 mb-1 uppercase tracking-wide">
+              <p className="text-xs text-ink-muted mb-1 uppercase tracking-wide">
                 已生成章节 ({chapterTitles.length}{totalChapters > 0 ? `/${totalChapters}` : ''})
               </p>
               <div className="space-y-1">
                 {chapterTitles
                   .sort((a, b) => a.index - b.index)
                   .map((ch) => (
-                    <div key={ch.index} className="flex items-center gap-2 text-sm text-gray-300 px-2 py-1">
-                      <span className="text-accent-green text-xs">&#10003;</span>
+                    <div key={ch.index} className="flex items-center gap-2 text-sm text-ink px-2 py-1">
+                      <Check className="h-3 w-3 text-accent-green shrink-0" />
                       <span>{ch.title}</span>
                     </div>
                   ))}

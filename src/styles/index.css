@@ -2,14 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 主题默认值 = 终端绿深板（stores/theme.ts 运行时覆盖；JS 加载失败时的兜底） */
+:root {
+  --c-accent: 74 222 128;
+  --c-accent-green: 74 222 128;
+  --c-accent-red: 248 113 113;
+  --c-accent-yellow: 250 204 21;
+  --c-surface: 10 10 10;
+  --c-surface-light: 17 17 17;
+  --c-surface-dark: 0 0 0;
+  --c-surface-hover: 22 22 22;
+  --c-line: 38 38 38;
+  --c-line-subtle: 26 26 26;
+  --c-ink: 229 229 229;
+  --c-ink-muted: 115 115 115;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
   height: 100vh;
+}
+
+/* 选区：accent 底黑字 */
+::selection {
+  background: rgb(var(--c-accent));
+  color: rgb(var(--c-surface));
+}
+
+/* 焦点：统一 1px accent 描边 */
+*:focus-visible {
+  outline: 1px solid rgb(var(--c-accent));
+  outline-offset: 1px;
 }
 
 /* Electron drag regions */
@@ -22,9 +50,10 @@ body {
   -webkit-app-region: no-drag;
 }
 
-/* Custom scrollbar */
+/* 滚动条：直角终端风 */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -32,10 +61,9 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+  background: rgb(var(--c-line));
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(var(--c-ink-muted));
 }

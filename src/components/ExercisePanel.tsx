@@ -1,3 +1,4 @@
+import { Lightbulb, TerminalSquare } from 'lucide-react'
 import { Exercise } from '../types'
 import DifficultyBadge from './ui/DifficultyBadge'
 import ErrorDisplay from './ui/ErrorDisplay'
@@ -13,8 +14,8 @@ export default function ExercisePanel({ exercise, loading, error = '', onGenerat
   if (!exercise) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center gap-4 p-4">
-        <div className="text-4xl">💡</div>
-        <p className="text-gray-400 text-sm">还没有练习题目</p>
+        <TerminalSquare className="h-10 w-10 text-line" />
+        <p className="text-ink-muted text-sm">还没有练习题目</p>
         <ErrorDisplay message={error} />
         <button
           onClick={onGenerate}
@@ -31,13 +32,13 @@ export default function ExercisePanel({ exercise, loading, error = '', onGenerat
     <div className="h-full overflow-auto p-4">
       <h3 className="text-lg font-semibold mb-2">{exercise.title}</h3>
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-xs px-2 py-0.5 rounded-full bg-accent/20 text-accent">
+        <span className="text-xs px-2 py-0.5 rounded-sm bg-accent/20 text-accent">
           {exercise.language}
         </span>
         <DifficultyBadge difficulty={exercise.difficulty} />
       </div>
 
-      <div className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed mb-4">
+      <div className="text-sm text-ink whitespace-pre-wrap leading-relaxed mb-4">
         {exercise.description}
       </div>
 
@@ -47,17 +48,17 @@ export default function ExercisePanel({ exercise, loading, error = '', onGenerat
           <div className="space-y-2">
             {exercise.testCases.map((tc, i) => (
               <div key={i} className="bg-surface-dark rounded-lg p-3 text-xs font-mono border-l-2 border-accent">
-                <div className="text-gray-500 text-2xs mb-1">示例 {i + 1}</div>
-                <div className="text-green-400">&gt; {tc.input}</div>
-                <div className="text-blue-400">{tc.expected}</div>
+                <div className="text-ink-muted text-2xs mb-1">示例 {i + 1}</div>
+                <div className="text-accent">&gt; {tc.input}</div>
+                <div className="text-ink-muted">{tc.expected}</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      <p className="text-xs text-gray-500 mt-4">
-        💡 在编辑器中完成代码后，点击"提交审查"获取 AI 反馈
+      <p className="text-xs text-ink-muted mt-4 flex items-center gap-1.5">
+        <Lightbulb className="h-3.5 w-3.5" /> 在编辑器中完成代码后，点击"提交审查"获取 AI 反馈
       </p>
     </div>
   )

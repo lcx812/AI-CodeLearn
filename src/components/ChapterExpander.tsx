@@ -136,15 +136,15 @@ export default function ChapterExpander({ courseId, currentChapterCount, onDone 
   if (!course) return null
 
   return (
-    <div className="bg-surface-light rounded-xl p-6 border border-gray-700">
+    <div className="bg-surface-light rounded-xl p-6 border border-line">
       <h3 className="text-lg font-semibold mb-1">章节扩写</h3>
-      <p className="text-sm text-gray-400 mb-4">
+      <p className="text-sm text-ink-muted mb-4">
         为「{course.title}」追加新章节（已有 {currentChapterCount} 章）
       </p>
 
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">章节数</label>
+          <label className="block text-sm text-ink-muted mb-1">章节数</label>
           <input
             type="number"
             min={1}
@@ -152,12 +152,12 @@ export default function ChapterExpander({ courseId, currentChapterCount, onDone 
             value={chapterCount}
             onChange={e => setChapterCount(clampNumber(Number(e.target.value), 1, effectiveMax))}
             disabled={generating}
-            className="w-full bg-surface border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent disabled:opacity-50"
+            className="w-full bg-surface-dark border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-muted/60 focus:outline-none focus:border-accent disabled:opacity-50"
           />
-          <p className="text-xs text-gray-500 mt-0.5">1-{effectiveMax}（总量上限 {CHAPTER_LIMIT}）</p>
+          <p className="text-xs text-ink-muted/60 mt-0.5">1-{effectiveMax}（总量上限 {CHAPTER_LIMIT}）</p>
         </div>
         <div>
-          <label className="block text-sm text-gray-400 mb-1">每章题目数</label>
+          <label className="block text-sm text-ink-muted mb-1">每章题目数</label>
           <input
             type="number"
             min={1}
@@ -165,21 +165,21 @@ export default function ChapterExpander({ courseId, currentChapterCount, onDone 
             value={qCount}
             onChange={e => setQCount(clampNumber(Number(e.target.value), 1, QUESTIONS_PER_CHAPTER_MAX))}
             disabled={generating}
-            className="w-full bg-surface border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent disabled:opacity-50"
+            className="w-full bg-surface-dark border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-muted/60 focus:outline-none focus:border-accent disabled:opacity-50"
           />
-          <p className="text-xs text-gray-500 mt-0.5">1-10</p>
+          <p className="text-xs text-ink-muted/60 mt-0.5">1-10</p>
         </div>
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm text-gray-400 mb-1">额外要求（可选）</label>
+        <label className="block text-sm text-ink-muted mb-1">额外要求（可选）</label>
         <textarea
           value={extra}
           onChange={e => setExtra(e.target.value)}
           placeholder="例如: 增加实战项目, 多讲高级特性..."
           disabled={generating}
           rows={2}
-          className="w-full bg-surface border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-accent resize-none disabled:opacity-50"
+          className="w-full bg-surface-dark border border-line rounded-lg px-3 py-2 text-sm text-ink placeholder-ink-muted/60 focus:outline-none focus:border-accent resize-none disabled:opacity-50"
         />
       </div>
 
@@ -194,7 +194,7 @@ export default function ChapterExpander({ courseId, currentChapterCount, onDone 
         {generating && (
           <button
             onClick={handleCancel}
-            className="px-4 py-2 bg-surface border border-gray-600 text-gray-300 rounded-lg text-sm hover:bg-surface-dark transition-colors"
+            className="px-4 py-2 bg-surface border border-line text-ink-muted rounded-lg text-sm hover:bg-surface-dark hover:text-ink transition-colors"
           >
             取消
           </button>
@@ -204,7 +204,7 @@ export default function ChapterExpander({ courseId, currentChapterCount, onDone 
       {error && <ErrorDisplay message={error} />}
 
       {(generating || progress > 0) && (
-        <div className="border-t border-gray-700 pt-4">
+        <div className="border-t border-line pt-4">
           {status && (
             <div className="flex items-center gap-2 mb-3">
               {generating && (
@@ -212,8 +212,8 @@ export default function ChapterExpander({ courseId, currentChapterCount, onDone 
               )}
               <p className={`text-sm ${
                 status === '扩写完成！' ? 'text-accent-green'
-                : status === '已取消' ? 'text-gray-500'
-                : 'text-gray-300'
+                : status === '已取消' ? 'text-ink-muted'
+                : 'text-ink'
               }`}>
                 {status}
               </p>
