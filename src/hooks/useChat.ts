@@ -4,109 +4,96 @@ import { useStream } from './useStream'
 import { genId, genChapterId, extractJson } from '../lib/utils'
 import type { Message, Chapter } from '../types'
 
-export type ChatScope = 'global' | 'course' | 'explorer'
+export type ChatScope = 'global' | 'local'
 
 interface UseChatOptions {
   scope: ChatScope
-  courseId?: string
-  lang?: string
   systemPrompt: string
+  /** 回复中提取到章节 JSON 时回调（仅 local scope 使用） */
   onChaptersExtracted?: (chapters: Chapter[]) => void
 }
 
-export function useChat({ scope, courseId, systemPrompt, onChaptersExtracted }: UseChatOptions) {
-  const globalStore = useChatStore()
-  const isLocal = scope !== 'global'
+/** 从回复文本提取章节 JSON，无则返回 null */
+function extractChapters(text: string): Chapter[] | null {
+  const jsonStr = extractJson(text)
+  if (!jsonStr) return null
+  try {
+    const parsed = JSON.parse(jsonStr)
+    if (!parsed?.chapters || !Array.isArray(parsed.chapters)) return null
+    return parsed.chapters.slice(0, 50).map((ch: any) => ({
+      id: genChapterId(),
+      title: ch.title || '新章节',
+      content: ch.content || '',
+      exercises: (ch.exercises || []).map((ex: any) => ({ ...ex, type: ex.type || 'coding' })),
+      quiz: ch.quiz || [],
+      status: 'pending' as const,
+    }))
+  } catch {
+    return null
+  }
+}
 
-  // 本地状态（course/explorer 场景）
+/**
+ * 统一聊天逻辑：
+ * - scope 'global'：全局 AI 导师，委托 useChatStore（持久化历史）
+ * - scope 'local'：课程内/探索/追问等局部对话，组件级状态，不持久化
+ */
+export function useChat({ scope, systemPrompt, onChaptersExtracted }: UseChatOptions) {
+  const globalStore = useChatStore()
+  const isLocal = scope === 'local'
+
   const [localMsgs, setLocalMsgs] = useState<Message[]>([])
 
-  // 流式 hook
   const stream = useStream({
     onDone: (fullText) => {
-      const assistantMsg: Message = { id: genId(), role: 'assistant', content: fullText, timestamp: Date.now() }
       if (isLocal) {
+        const assistantMsg: Message = { id: genId(), role: 'assistant', content: fullText, timestamp: Date.now() }
         setLocalMsgs(prev => [...prev, assistantMsg])
-      } else {
-        // global scope: stream.onDone already handles via chat store sendMessage
       }
-      // 尝试从回复中提取章节
-      if (courseId && onChaptersExtracted) {
-        const jsonStr = extractJson(fullText)
-        if (jsonStr) {
-          try {
-            const parsed = JSON.parse(jsonStr)
-            if (parsed?.chapters && Array.isArray(parsed.chapters)) {
-              const chs = parsed.chapters.slice(0, 50).map((ch: any) => ({
-                id: genChapterId(),
-                title: ch.title || '新章节',
-                content: ch.content || '',
-                exercises: (ch.exercises || []).map((ex: any) => ({ ...ex, type: ex.type || 'coding' })),
-                quiz: ch.quiz || [],
-                status: 'pending' as const,
-              }))
-              onChaptersExtracted(chs)
-            }
-          } catch { /* ignore */ }
-        }
+      if (onChaptersExtracted) {
+        const chs = extractChapters(fullText)
+        if (chs) onChaptersExtracted(chs)
+      }
+    },
+    onError: (err) => {
+      if (isLocal) {
+        const errMsg: Message = { id: genId(), role: 'assistant', content: `错误: ${err}`, timestamp: Date.now() }
+        setLocalMsgs(prev => [...prev, errMsg])
       }
     },
   })
 
-  // 初始化加载历史
+  // 全局历史加载
   useEffect(() => {
-    if (scope === 'global') {
-      globalStore.loadHistory()
-    }
-  }, [scope])
+    if (!isLocal) globalStore.loadHistory()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLocal])
 
-  // 统一的消息列表
-  const messages = isLocal
-    ? localMsgs
-    : globalStore.messages
-
-  const isStreaming = stream.isStreaming ||
-    (isLocal ? false : globalStore.isStreaming)
-
-  const currentStream = isLocal
-    ? stream.streamText
-    : globalStore.currentStream
+  const messages = isLocal ? localMsgs : globalStore.messages
+  const isStreaming = isLocal ? stream.isStreaming : globalStore.isStreaming
+  const currentStream = isLocal ? stream.streamText : globalStore.currentStream
 
   const send = useCallback((content: string) => {
     if (isLocal) {
       const userMsg: Message = { id: genId(), role: 'user', content, timestamp: Date.now() }
       const msgs = [...localMsgs, userMsg]
       setLocalMsgs(msgs)
-      const raw = msgs.map(m => ({ role: m.role, content: m.content }))
-      stream.start(raw, systemPrompt)
+      stream.start(msgs.map(m => ({ role: m.role, content: m.content })), systemPrompt)
     } else {
       globalStore.sendMessage(content, systemPrompt)
     }
   }, [isLocal, localMsgs, systemPrompt, stream, globalStore])
 
   const clear = useCallback(() => {
-    if (isLocal) {
-      setLocalMsgs([])
-    } else {
-      globalStore.clearMessages()
-    }
+    if (isLocal) setLocalMsgs([])
+    else globalStore.clearMessages()
     stream.cancel()
   }, [isLocal, globalStore, stream])
 
   const remove = useCallback((id: string) => {
-    if (isLocal) {
-      setLocalMsgs(prev => prev.filter(m => m.id !== id))
-    } else {
-      globalStore.deleteMessage(id)
-    }
+    if (isLocal) setLocalMsgs(prev => prev.filter(m => m.id !== id))
+    else globalStore.deleteMessage(id)
   }, [isLocal, globalStore])
 
-  return {
-    messages,
-    isStreaming: isStreaming && !!currentStream,
-    currentStream,
-    send,
-    clear,
-    remove,
-  }
+  return { messages, isStreaming, currentStream, send, clear, remove }
 }

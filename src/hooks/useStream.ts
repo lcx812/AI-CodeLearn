@@ -44,6 +44,8 @@ export function useStream(opts: UseStreamOptions = {}) {
           opts.onDone?.(full)
         },
         (err) => {
+          accumRef.current = ''
+          setStreamText('')
           setIsStreaming(false)
           cleanupRef.current = null
           opts.onError?.(err)

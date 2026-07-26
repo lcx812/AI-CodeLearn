@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { Message } from '../types'
 import { chatStream, loadProgress, saveProgress } from '../lib/ipc'
 import { genId } from '../lib/utils'
+import { CHAT_HISTORY_LIMIT } from '../lib/constants'
 
 interface ChatState {
   messages: Message[]
@@ -9,7 +10,6 @@ interface ChatState {
   currentStream: string
   sendMessage: (content: string, systemPrompt: string) => Promise<void>
   deleteMessage: (id: string) => void
-  regenerate: (systemPrompt: string) => Promise<void>
   clearMessages: () => void
   loadHistory: () => Promise<void>
 }
@@ -45,7 +45,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         const assistantMsg: Message = { id: genId(), role: 'assistant', content: streamed, timestamp: Date.now() }
         const final = [...get().messages, assistantMsg]
         set({ messages: final, isStreaming: false, currentStream: '' })
-        saveProgress('chat_history', final.slice(-50))
+        saveProgress('chat_history', final.slice(-CHAT_HISTORY_LIMIT))
       },
       (err) => {
         set({ isStreaming: false, currentStream: '' })
@@ -57,18 +57,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   deleteMessage: (id) => {
     const filtered = get().messages.filter(m => m.id !== id)
     set({ messages: filtered })
-    saveProgress('chat_history', filtered.slice(-50))
-  },
-
-  regenerate: async (systemPrompt) => {
-    const msgs = get().messages
-    if (msgs.length < 2) return
-    const lastAssistant = msgs[msgs.length - 1]
-    if (lastAssistant.role !== 'assistant') return
-    const lastUser = msgs[msgs.length - 2]
-    if (lastUser.role !== 'user') return
-    set({ messages: msgs.slice(0, -1) })
-    await get().sendMessage(lastUser.content, systemPrompt)
+    saveProgress('chat_history', filtered.slice(-CHAT_HISTORY_LIMIT))
   },
 
   clearMessages: () => {
