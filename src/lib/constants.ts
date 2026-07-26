@@ -20,20 +20,23 @@ export const DIFFICULTY_CLASS: Record<string, string> = {
 }
 
 // ── 章节状态图标 ──
-export const CHAPTER_STATUS_ICON: Record<string, string> = {
-  done: '📚',
-  generating: '📝',
-  pending: '⬜',
+import { CheckCircle2, Loader2, Circle, Terminal, Braces, Cog, Zap, Coffee, Hash, FileCode2 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+
+export const CHAPTER_STATUS_ICON: Record<string, LucideIcon> = {
+  done: CheckCircle2,
+  generating: Loader2,
+  pending: Circle,
 }
 
-// ── 语言图标 ──
-export const LANGUAGE_ICON: Record<string, string> = {
-  python: '🐍',
-  javascript: '💛',
-  typescript: '💙',
-  rust: '🦀',
-  go: '🔵',
-  java: '☕',
-  c: '⚙️',
-  cpp: '🔧',
+// ── 语言图标（lucide 无品牌图标，用语义近似的单色图标）──
+export const LANGUAGE_ICON: Record<string, LucideIcon> = {
+  python: Terminal,
+  javascript: Braces,
+  typescript: Braces,
+  rust: Cog,
+  go: Zap,
+  java: Coffee,
+  c: Hash,
+  cpp: FileCode2,
 }

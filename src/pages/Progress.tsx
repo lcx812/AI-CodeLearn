@@ -19,21 +19,29 @@ export default function Progress() {
         { label: '暂无课程', pct: 0 },
       ]
 
+  const stats = [
+    { value: courses.length, label: '课程总数' },
+    { value: doneChapters, label: '已完成章节' },
+    { value: totalChapters, label: '总章节数' },
+  ]
+
   return (
     <div className="max-w-4xl">
-      <h2 className="text-2xl font-bold mb-6">📊 学习进度</h2>
+      <h2 className="text-2xl font-bold mb-6">
+        <span className="text-ink-muted">$ </span>学习进度
+      </h2>
 
-      <div className="bg-surface-light rounded-xl p-6 mb-6">
+      <div className="bg-surface-light border border-line rounded-xl p-6 mb-6">
         <h3 className="font-semibold mb-4">课程概览</h3>
         {courses.length === 0 ? (
-          <p className="text-sm text-gray-500">还没有课程，去课程页生成你的第一门课程吧！</p>
+          <p className="text-sm text-ink-muted">还没有课程，去课程页生成你的第一门课程吧！</p>
         ) : (
           <div className="space-y-4">
             {courseItems.map(item => (
               <div key={item.label}>
                 <div className="flex justify-between text-sm mb-1">
                   <span>{item.label}</span>
-                  <span className="text-gray-400">{item.pct}%</span>
+                  <span className="text-ink-muted">{item.pct}%</span>
                 </div>
                 <ProgressBar value={item.pct} />
               </div>
@@ -43,18 +51,12 @@ export default function Progress() {
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-surface-light rounded-xl p-5 text-center">
-          <div className="text-3xl font-bold text-accent">{courses.length}</div>
-          <div className="text-sm text-gray-400">课程总数</div>
-        </div>
-        <div className="bg-surface-light rounded-xl p-5 text-center">
-          <div className="text-3xl font-bold text-accent-green">{doneChapters}</div>
-          <div className="text-sm text-gray-400">已完成章节</div>
-        </div>
-        <div className="bg-surface-light rounded-xl p-5 text-center">
-          <div className="text-3xl font-bold text-accent-yellow">{totalChapters}</div>
-          <div className="text-sm text-gray-400">总章节数</div>
-        </div>
+        {stats.map(s => (
+          <div key={s.label} className="bg-surface-light border border-line rounded-xl p-5 text-center">
+            <div className="text-3xl font-bold text-accent">{s.value}</div>
+            <div className="text-sm text-ink-muted">{s.label}</div>
+          </div>
+        ))}
       </div>
     </div>
   )

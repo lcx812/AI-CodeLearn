@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { ArrowRight, BarChart3, BookOpen, CheckCircle2, Flame, Globe, Terminal } from 'lucide-react'
 import { useCourseStore } from '../stores/course'
 import { getDifficultyLabel } from '../lib/utils'
 
@@ -12,26 +13,33 @@ export default function Dashboard() {
     sum + c.chapters.filter(ch => ch.status === 'done').length, 0
   )
 
+  const stats = [
+    { icon: Flame, value: 0, label: '连续打卡天数' },
+    { icon: BookOpen, value: courses.length, label: '课程总数' },
+    { icon: CheckCircle2, value: `${doneChapters}/${totalChapters}`, label: '已完成章节' },
+  ]
+
+  const quickLinks = [
+    { to: '/courses', icon: BookOpen, title: '浏览课程', desc: courses.length > 0 ? '继续学习或生成新课' : 'AI 生成你的第一门课程' },
+    { to: '/playground', icon: Terminal, title: '进入练习场', desc: '动手写代码，AI 即时反馈' },
+    { to: '/ai-tutor', icon: Globe, title: '探索编程语言', desc: '了解各种语言的特点和用途' },
+    { to: '/progress', icon: BarChart3, title: '查看进度', desc: '追踪学习成果' },
+  ]
+
   return (
     <div className="max-w-4xl">
-      <h2 className="text-2xl font-bold mb-6">👋 欢迎回来</h2>
+      <h2 className="text-2xl font-bold mb-6">
+        <span className="text-ink-muted">$ </span>欢迎回来
+      </h2>
 
       <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="bg-surface-light rounded-xl p-5">
-          <div className="text-3xl mb-1">🔥</div>
-          <div className="text-2xl font-bold">0</div>
-          <div className="text-sm text-gray-400">连续打卡天数</div>
-        </div>
-        <div className="bg-surface-light rounded-xl p-5">
-          <div className="text-3xl mb-1">📚</div>
-          <div className="text-2xl font-bold">{courses.length}</div>
-          <div className="text-sm text-gray-400">课程总数</div>
-        </div>
-        <div className="bg-surface-light rounded-xl p-5">
-          <div className="text-3xl mb-1">✅</div>
-          <div className="text-2xl font-bold">{doneChapters}/{totalChapters}</div>
-          <div className="text-sm text-gray-400">已完成章节</div>
-        </div>
+        {stats.map(s => (
+          <div key={s.label} className="bg-surface-light border border-line rounded-xl p-5">
+            <s.icon className="h-4 w-4 text-ink-muted mb-2" />
+            <div className="text-2xl font-bold text-accent">{s.value}</div>
+            <div className="text-sm text-ink-muted">{s.label}</div>
+          </div>
+        ))}
       </div>
 
       {courses.length > 0 && (
@@ -42,19 +50,19 @@ export default function Dashboard() {
               <Link
                 key={c.id}
                 to={`/courses/${c.id}`}
-                className="flex items-center justify-between bg-surface-light rounded-xl px-5 py-3 hover:bg-surface-light/80 transition-colors"
+                className="flex items-center justify-between bg-surface-light border border-line rounded-xl px-5 py-3 hover:bg-surface-hover hover:border-accent/50 transition-colors group"
               >
                 <div>
                   <div className="font-medium">{c.title}</div>
-                  <div className="text-sm text-gray-400">{c.language} · {c.chapters.length} 章 · {
+                  <div className="text-sm text-ink-muted">{c.language} · {c.chapters.length} 章 · {
                     getDifficultyLabel(c.difficulty)
                   }</div>
                 </div>
-                <span className="text-accent text-sm">进入 →</span>
+                <ArrowRight className="h-4 w-4 text-ink-muted group-hover:text-accent transition-colors" />
               </Link>
             ))}
             {courses.length > 3 && (
-              <Link to="/courses" className="block text-center text-sm text-gray-400 hover:text-white py-2">
+              <Link to="/courses" className="block text-center text-sm text-ink-muted hover:text-ink py-2">
                 查看全部 {courses.length} 门课程
               </Link>
             )}
@@ -64,26 +72,13 @@ export default function Dashboard() {
 
       <h3 className="text-lg font-semibold mb-3">快速开始</h3>
       <div className="grid grid-cols-2 gap-3">
-        <Link to="/courses" className="bg-surface-light hover:bg-surface-light/80 rounded-xl p-4 transition-colors">
-          <div className="text-xl mb-1">📖</div>
-          <div className="font-medium">浏览课程</div>
-          <div className="text-sm text-gray-400">{courses.length > 0 ? '继续学习或生成新课' : 'AI 生成你的第一门课程'}</div>
-        </Link>
-        <Link to="/playground" className="bg-surface-light hover:bg-surface-light/80 rounded-xl p-4 transition-colors">
-          <div className="text-xl mb-1">💻</div>
-          <div className="font-medium">进入练习场</div>
-          <div className="text-sm text-gray-400">动手写代码，AI 即时反馈</div>
-        </Link>
-        <Link to="/ai-tutor" className="bg-surface-light hover:bg-surface-light/80 rounded-xl p-4 transition-colors">
-          <div className="text-xl mb-1">🌐</div>
-          <div className="font-medium">探索编程语言</div>
-          <div className="text-sm text-gray-400">了解各种语言的特点和用途</div>
-        </Link>
-        <Link to="/progress" className="bg-surface-light hover:bg-surface-light/80 rounded-xl p-4 transition-colors">
-          <div className="text-xl mb-1">📊</div>
-          <div className="font-medium">查看进度</div>
-          <div className="text-sm text-gray-400">追踪学习成果</div>
-        </Link>
+        {quickLinks.map(q => (
+          <Link key={q.to} to={q.to} className="bg-surface-light border border-line hover:bg-surface-hover hover:border-accent/50 rounded-xl p-4 transition-colors group">
+            <q.icon className="h-5 w-5 text-ink-muted group-hover:text-accent transition-colors mb-2" />
+            <div className="font-medium">{q.title}</div>
+            <div className="text-sm text-ink-muted">{q.desc}</div>
+          </Link>
+        ))}
       </div>
     </div>
   )

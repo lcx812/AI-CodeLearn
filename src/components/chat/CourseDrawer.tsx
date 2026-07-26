@@ -16,29 +16,30 @@ export default function CourseDrawer({ courseId, onChapterClick, onExpand }: Cou
   if (!course) return null
 
   return (
-    <div className="w-56 bg-surface-dark border-r border-gray-700 flex flex-col shrink-0">
-      <div className="p-3 border-b border-gray-700 text-sm font-semibold truncate">
-        📚 {course.title}
+    <div className="w-56 bg-surface-dark border-r border-line flex flex-col shrink-0">
+      <div className="p-3 border-b border-line text-sm font-semibold truncate">
+        {course.title}
       </div>
       <div className="flex-1 overflow-auto">
         {course.chapters.length === 0 ? (
-          <div className="p-3 text-xs text-gray-500 text-center">暂无章节</div>
+          <div className="p-3 text-xs text-ink-muted text-center">暂无章节</div>
         ) : (
-          course.chapters.map(ch => (
-            <button
-              key={ch.id}
-              onClick={() => onChapterClick(ch)}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-surface-light flex items-center gap-2 transition-colors"
-            >
-              <span className="text-xs">
-                {getStatusIcon(ch.status)}
-              </span>
-              <span className="truncate">{ch.title}</span>
-            </button>
-          ))
+          course.chapters.map(ch => {
+            const StatusIcon = getStatusIcon(ch.status)
+            return (
+              <button
+                key={ch.id}
+                onClick={() => onChapterClick(ch)}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-surface-hover flex items-center gap-2 transition-colors"
+              >
+                <StatusIcon className={`h-3.5 w-3.5 shrink-0 text-ink-muted ${ch.status === 'generating' ? 'animate-spin' : ''}`} />
+                <span className="truncate">{ch.title}</span>
+              </button>
+            )
+          })
         )}
       </div>
-      <div className="p-2 border-t border-gray-700">
+      <div className="p-2 border-t border-line">
         <button
           onClick={onExpand}
           disabled={course.chapters.length >= CHAPTER_LIMIT}

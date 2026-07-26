@@ -21,14 +21,14 @@ export default function MarkdownRenderer({ content, className = 'prose prose-inv
                 style={oneDark}
                 language={match[1]}
                 PreTag="div"
-                customStyle={{ borderRadius: '0.5rem', fontSize: '0.8rem' }}
+                customStyle={{ background: 'rgb(var(--c-surface-light))', border: '1px solid rgb(var(--c-line))', borderRadius: '4px', fontSize: '0.8rem' }}
               >
                 {s}
               </SyntaxHighlighter>
             )
           }
           return (
-            <code className="bg-surface px-1.5 py-0.5 rounded text-accent text-xs" {...props}>
+            <code className="bg-line-subtle px-1.5 py-0.5 rounded text-accent text-xs" {...props}>
               {children}
             </code>
           )

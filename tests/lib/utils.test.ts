@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { CheckCircle2, Loader2, Circle, Terminal, Cog, FileCode } from 'lucide-react'
 import { extractJson, formatDate, genId, genChapterId, clampNumber, getDifficultyLabel, getDifficultyClass, getStatusIcon, getLanguageIcon } from '../../src/lib/utils'
 
 describe('extractJson', () => {
@@ -113,27 +114,27 @@ describe('getDifficultyClass', () => {
 
 describe('getStatusIcon', () => {
   it('returns icon for known status', () => {
-    expect(getStatusIcon('done')).toBe('📚')
-    expect(getStatusIcon('generating')).toBe('📝')
-    expect(getStatusIcon('pending')).toBe('⬜')
+    expect(getStatusIcon('done')).toBe(CheckCircle2)
+    expect(getStatusIcon('generating')).toBe(Loader2)
+    expect(getStatusIcon('pending')).toBe(Circle)
   })
 
   it('returns fallback for unknown status', () => {
-    expect(getStatusIcon('unknown')).toBe('⬜')
+    expect(getStatusIcon('unknown')).toBe(Circle)
   })
 })
 
 describe('getLanguageIcon', () => {
   it('returns icon for known language', () => {
-    expect(getLanguageIcon('python')).toBe('🐍')
-    expect(getLanguageIcon('rust')).toBe('🦀')
+    expect(getLanguageIcon('python')).toBe(Terminal)
+    expect(getLanguageIcon('rust')).toBe(Cog)
   })
 
   it('is case insensitive', () => {
-    expect(getLanguageIcon('Python')).toBe('🐍')
+    expect(getLanguageIcon('Python')).toBe(Terminal)
   })
 
   it('returns fallback for unknown language', () => {
-    expect(getLanguageIcon('haskell')).toBe('📄')
+    expect(getLanguageIcon('haskell')).toBe(FileCode)
   })
 })

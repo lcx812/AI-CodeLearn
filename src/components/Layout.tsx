@@ -6,7 +6,7 @@ import ErrorBoundary from './ErrorBoundary'
 
 export default function Layout() {
   return (
-    <div className="flex h-screen bg-surface text-white">
+    <div className="flex h-screen bg-surface text-ink">
       <ErrorBoundary>
         <Sidebar />
       </ErrorBoundary>
